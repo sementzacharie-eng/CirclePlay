@@ -1,0 +1,392 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
+
+/* ----------------------------- */
+/* STYLES GÉNÉRAUX */
+/* ----------------------------- */
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    background: linear-gradient(270deg,
+        #ffe6f0,
+        #fff3c4,
+        #ffd6e7,
+        #fff8d6
+    );
+
+    background-size: 400% 400%;
+    animation: backgroundMove 12s ease infinite;
+
+}
+
+/* ----------------------------- */
+/* LOGO EN HAUT */
+/* ----------------------------- */
+
+#top-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1vh;
+    height: 20vh;
+}
+
+#image-logo {
+    display: block;
+    width: 28vw;
+    margin-bottom: 2vh;
+}
+
+/* ----------------------------- */
+/* MENU PRINCIPAL */
+/* ----------------------------- */
+
+#menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    margin-bottom: 10vh;
+    height: 60vh;
+    width: 30vw;
+    border-radius: 5vh;
+    padding-top: 6vh;
+    box-sizing: border-box;
+
+    background: linear-gradient(135deg, #1f1f1f, #3a3a3a, #2a2a2a, #4a4a4a);
+    background-size: 300% 300%;
+
+    animation: moveMenu 6s ease infinite;
+}
+
+#menu-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding-top: 3vh;
+    box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 0.18s ease;
+}
+
+/* ----------------------------- */
+/* BOUTONS DU MENU */
+/* ----------------------------- */
+
+#menu button {
+    margin: 1vh;
+    padding: 1.5vh 2vw;
+
+    font-size: 2.8vh;
+    font-family: 'Orbitron', sans-serif;
+    width: 60%;
+    height: 15%;
+    color: black;
+
+    border: none;
+    border-radius: 2vh;
+    background: linear-gradient(135deg, #f2b6c6, #f2e08a);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+    box-shadow: 0 0 10px rgba(242, 182, 198, 0.35),
+                0 0 20px rgba(242, 224, 138, 0.25);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    
+}
+
+/* ----------------------------- */
+/* BOUTON RETOUR */
+/* ----------------------------- */
+
+#menu button.btn-retour {
+    position: absolute;
+    bottom: 3vh;
+    margin: 0 auto;
+
+    color: black;
+    font-size: 2.5vh;
+    background: linear-gradient(135deg, #ff0000, #f86969);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 8%;
+    width: 30%;
+    border-radius: 1.5vh;
+}
+
+/* ----------------------------- */
+/* EFFET HOVER */
+/* ----------------------------- */
+
+#menu button:hover {
+    box-shadow: 0 0 12px rgba(242, 182, 198, 0.6),
+                0 0 25px rgba(242, 224, 138, 0.5),
+                0 0 40px rgba(255, 200, 210, 0.3);
+    transform: scale(1.1);
+    color: black;
+}
+
+/* ----------------------------- */
+/* TITRE DU MENU */
+/* ----------------------------- */
+
+#menu h2,
+#menu #player-turn,
+#menu #chill-prompt {
+    font-size: 3vh;
+    font-family: 'Orbitron', sans-serif;
+    color: pink;
+    margin: 0;
+    padding: 0;
+    line-height: 1.1;
+    text-align: center;
+    z-index: 1;
+}
+
+#menu h2 {
+    position: relative;
+    bottom: 3vh;
+    left: auto;
+    transform: none;
+    white-space: nowrap;
+    margin: 0 0 1.2vh 0;
+    width: 100%;
+}
+
+/* ----------------------------- */
+/* CHAMPS DE TEXTE DU ACTION / VÉRITÉ */
+/* ----------------------------- */
+
+#menu #input-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0vh;
+    width: 90%;
+    margin-top: 0vh;
+}
+
+#menu .input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4vw;
+    width: 100%;
+}
+
+#menu input[type="text"] {
+    flex: 1;
+    padding: 1vh 0.7vw;
+    border: none;
+    border-radius: 1vh;
+    font-size: 1.6vh;
+    font-family: 'Orbitron', sans-serif;
+    box-sizing: border-box;
+}
+
+#menu .suivant-button {
+    position: absolute;
+    top: 4.2vh;
+    margin: 0 auto;
+
+    font-size: 2vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 5%;
+    width: 30%;
+    border-radius: 1.5vh;
+}
+
+/* ----------------------------- */
+/* CROIX DE SUPPRESSION/AJOUTS DU ACTION/VÉRITÉ */
+/* ----------------------------- */
+
+#menu .delete-input {
+    border: none;
+    background: rgb(134, 1, 1);
+    color: white;
+    border-radius: 50%;
+    width: 4vh;
+    height: 4vh;
+    font-size: 1.4vh;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#menu .add-input {
+    position: absolute;
+    bottom: 2vh;
+    right: 2vh;
+    border: none;
+    border-radius: 2vh;
+    width: 3vh;
+    height: 3vh;
+    background: #f2e08a;
+    color: black;
+    font-size: 2vh;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ----------------------------- */
+/* BOUTONS DE DIFFICULTÉ DU ACTION/VÉRITÉ */
+/* ----------------------------- */
+
+#difficulty-buttons,
+#ActionTruthButtons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 1.2vh;
+    margin-top: 1.5vh;
+}
+
+#difficulty-buttons button,
+#ActionTruthButtons button {
+    width: 72%;
+    min-height: 6vh;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+
+#difficulty-buttons .btn1 {
+    background: linear-gradient(135deg, #9beccf, #dcedc1);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn2 {
+    background: linear-gradient(135deg, #ffd900, #ffaaa5);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn3 {
+    background: linear-gradient(135deg, #ff3300, #ffaaa5);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn4 {
+    background: linear-gradient(135deg, #ff0000, #ff4757);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+/* ----------------------------- */
+/* TEXTE DU ACTION/VÉRITÉ */
+/* ----------------------------- */
+
+#menu #player-turn {
+    font-size: 2.6vh;
+    font-weight: 700;
+    margin-top: 0.2vh;
+    margin-bottom: 0.8vh;
+    color: #fff7b2;
+    text-shadow: 0 0 8px rgba(255, 247, 178, 0.7), 0 0 16px rgba(255, 140, 180, 0.5);
+}
+
+#menu #chill-prompt {
+    font-size: 2.2vh;
+    font-weight: 600;
+    width: 85%;
+    white-space: normal;
+    line-height: 1.5;
+    margin-top: 6vh;
+    margin-bottom: 1vh;
+    color: #ffffff;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.25), 0 0 12px rgba(242, 182, 198, 0.35);
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1.2vh;
+    padding: 1vh 1.2vw;
+}
+
+#menu #ActionTruthButtons .btnAction {
+    margin-top: 1vh;
+    background: linear-gradient(135deg, #0a6cec, #3dadf8);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#menu #ActionTruthButtons .btntruth {
+    background: linear-gradient(135deg, #ff0000, #f86969);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+/* ----------------------------- */
+/* ANIMATIONS */
+/* ----------------------------- */
+
+@keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes moveMenu {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes backgroundMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
