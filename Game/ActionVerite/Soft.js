@@ -1,9 +1,6 @@
 window.softActionVeriteData = {
     action: [
-        "Fais une petite démonstration d'un talent insolite pendant 20 secondes.",
-        "Improvise une petite danse pendant 15 secondes.",
-        "Dis une blague à la manière d'un super-héros.",
-        "Fais une voix de personnage pendant 20 secondes."
+        "Fais deviner une anecdote avec 3 mots clés à {joueur2}.",
     ],
     truth: [
         "Quel est le plus beau souvenir de ton enfance ?",

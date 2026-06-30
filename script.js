@@ -187,10 +187,47 @@ function ActionVerityDiff() {
 /* JEU ACTION/VÉRITÉ */
 /* ----------------------------- */
 
+function getRandomPlayer2(joueurActuel) {
+    let joueursPossibles = [
+        champ1,
+        champ2,
+        champ3,
+        champ4,
+        champ5,
+        champ6
+    ]
+        .map(nom => nom.trim())
+        .filter(nom => nom !== "" && nom !== joueurActuel);
+
+    if (joueursPossibles.length === 0) {
+        return "un autre joueur";
+    }
+
+    return joueursPossibles[
+        Math.floor(Math.random() * joueursPossibles.length)
+    ];
+}
+
 function getDifficultyPrompt(mode, type) {
-    const storage = window[`${mode}ActionVeriteData`];
-    if (!storage || !storage[type] || !storage[type].length) return "";
-    return storage[type][Math.floor(Math.random() * storage[type].length)];
+    let storage = window[`${mode}ActionVeriteData`];
+
+    if (!storage || !storage[type] || !storage[type].length) {
+        return "";
+    }
+
+    let phrase = storage[type][
+        Math.floor(Math.random() * storage[type].length)
+    ];
+
+    let joueurActuel =
+        document.getElementById("player-turn")?.textContent.trim() || "";
+
+    let joueur2 = getRandomPlayer2(joueurActuel);
+
+    return phrase.replaceAll(
+        "{joueur2}",
+        `<span style="color: blue; font-weight: bold;">${joueur2}</span>`
+    );
 }
 
 function renderDifficultyScreen(mode, title) {
@@ -220,7 +257,7 @@ function showDifficultyPrompt(mode, type) {
     const nextButton = document.getElementById(`next-${mode}-btn`);
 
     if (promptElement) {
-        promptElement.textContent = getDifficultyPrompt(mode, type);
+        promptElement.innerHTML = getDifficultyPrompt(mode, type);
     }
 
     if (actionButton) actionButton.style.display = "none";
