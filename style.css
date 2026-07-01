@@ -270,8 +270,8 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    gap: 1.2vh;
-    margin-top: 1.5vh;
+    gap: 1vh;
+    margin-top: 0vh;
 }
 
 #difficulty-buttons button,
@@ -305,6 +305,12 @@ body {
 
 #difficulty-buttons .btn4 {
     background: linear-gradient(135deg, #ff0000, #ff4757);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn5 {
+    background: linear-gradient(135deg, #ff69b4, #ffb6c1);
     background-size: 400% 400%;
     animation: gradientMove 6s ease infinite;
 }
