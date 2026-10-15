@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Feuille de style principale -->
+    <link rel="stylesheet" href="style.css">
+    <title>CirclePlay</title>
+</head>
+
+<body>
+    <!-- Logo et zone où les écrans du menu sont affichés -->
+    <div>
+        <div id="top-logo">
+            <img id="image-logo" src="img/CirclePlay.png" alt="Logo">
+        </div>
+
+        <div id="menu">
+            <div id="menu-content">
+                <h2>Menu Principal</h2>
+                <button onclick="menuDevice()">Jeux 🎮</button>
+                <button onclick="showProfile()">Profil ⚙️</button>
+                <button onclick="showCredits()">Crédits 👑</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questions et défis d'Action ou Vérité. -->
+    <script src="Game/ActionVerite/Chill.js"></script>
+    <script src="Game/ActionVerite/Soft.js"></script>
+    <script src="Game/ActionVerite/Hard.js"></script>
+    <script src="Game/ActionVerite/Extreme.js"></script>
+    <!-- Questions de Qui de nous ? -->
+    <script src="Game/QuiDeNous/Chill.js"></script>
+    <script src="Game/QuiDeNous/Soft.js"></script>
+    <script src="Game/QuiDeNous/Hard.js"></script>
+    <script src="Game/QuiDeNous/Extreme.js"></script>
+    <!-- Questions du Test de pureté. -->
+    <script src="Game/TestDePurete/Classique.js"></script>
+    <script src="Game/TestDePurete/Hard.js"></script>
+    <script src="Game/TestDePurete/SpecialSex.js"></script>
+    <!-- Navigation principale de l'application. -->
+    <script src="script.js"></script>
+    <!-- Logique de Qui de nous ?, d'Action ou Vérité et du Test de pureté. -->
+    <script src="Game/QuiDeNous/QuiDeNous.js"></script>
+    <script src="Game/ActionVerite/ActionVerite.js"></script>
+    <script src="Game/TestDePurete/TestDePureté.js"></script>
+</body>
+</html>

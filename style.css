@@ -1,0 +1,858 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+/* ----------------------------- */
+/* Base de la page et fond animé */
+/* ----------------------------- */
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Nunito', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    background: linear-gradient(270deg,
+        #ffe6f0,
+        #fff3c4,
+        #ffd6e7,
+        #fff8d6
+    );
+
+    background-size: 400% 400%;
+    animation: backgroundMove 12s ease infinite;
+
+}
+
+/* ----------------------------- */
+/* Logo de l'application */
+/* ----------------------------- */
+
+#top-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1vh;
+    height: 20vh;
+}
+
+#image-logo {
+    display: block;
+    width: 28vw;
+    margin-bottom: 2vh;
+}
+
+/* ----------------------------- */
+/* Conteneur du menu et zone de contenu dynamique */
+/* ----------------------------- */
+
+#menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    margin-bottom: 10vh;
+    height: 60vh;
+    width: 30vw;
+    border-radius: 5vh;
+    padding-top: 6vh;
+    box-sizing: border-box;
+
+    background: linear-gradient(135deg, #1f1f1f, #3a3a3a, #2a2a2a, #4a4a4a);
+    background-size: 300% 300%;
+
+    animation: moveMenu 6s ease infinite;
+}
+
+#menu-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding-top: 3vh;
+    box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 0.18s ease;
+}
+
+/* ----------------------------- */
+/* Style commun des boutons du menu */
+/* ----------------------------- */
+
+#menu button {
+    margin: 1vh;
+    padding: 1.5vh 2vw;
+
+    font-size: 2.8vh;
+    font-family: 'Nunito', sans-serif;
+    width: 60%;
+    height: 15%;
+    color: black;
+
+    border: none;
+    border-radius: 2vh;
+    background: linear-gradient(135deg, #f2b6c6, #f2e08a);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+    box-shadow: 0 0 10px rgba(242, 182, 198, 0.35),
+                0 0 20px rgba(242, 224, 138, 0.25);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    
+}
+
+/* ----------------------------- */
+/* Bouton de retour, placé au bas du menu */
+/* ----------------------------- */
+
+#menu button.btn-retour {
+    position: absolute;
+    bottom: 3vh;
+    margin: 0 auto;
+
+    color: black;
+    font-size: 2.5vh;
+    background: linear-gradient(135deg, #ff0000, #f86969);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 8%;
+    width: 30%;
+    border-radius: 1.5vh;
+}
+
+#menu button.purete-menu-retour {
+    width: 60%;
+}
+
+/* ----------------------------- */
+/* Interaction au survol des boutons */
+/* ----------------------------- */
+
+#menu button:hover {
+    box-shadow: 0 0 12px rgba(242, 182, 198, 0.6),
+                0 0 25px rgba(242, 224, 138, 0.5),
+                0 0 40px rgba(255, 200, 210, 0.3);
+    transform: scale(1.1);
+    color: black;
+}
+
+/* ----------------------------- */
+/* Titres et textes principaux du menu */
+/* ----------------------------- */
+
+#menu h2,
+#menu #player-turn,
+#menu #chill-prompt {
+    font-size: 3vh;
+    font-family: 'Nunito', sans-serif;
+    color: pink;
+    margin: 0;
+    padding: 0;
+    line-height: 1.1;
+    text-align: center;
+    z-index: 1;
+}
+
+#menu h2 {
+    position: relative;
+    bottom: 3vh;
+    left: auto;
+    transform: none;
+    white-space: nowrap;
+    margin: 0 0 1.2vh 0;
+    width: 100%;
+}
+
+/* ----------------------------- */
+/* Saisie et gestion des noms de joueurs */
+/* ----------------------------- */
+
+#menu .player-input-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 90%;
+    gap: 0.6vh;
+}
+
+#menu #input-list,
+#menu #qdn-input-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0vh;
+    width: 100%;
+    margin-top: 0vh;
+}
+
+#menu .input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4vw;
+    width: 100%;
+}
+
+#menu input[type="text"] {
+    flex: 1;
+    padding: 1vh 0.7vw;
+    border: none;
+    border-radius: 1vh;
+    font-size: 1.6vh;
+    font-family: 'Nunito', sans-serif;
+    box-sizing: border-box;
+}
+
+#menu input.purete-name-input {
+    padding: 1.2vh 1vw;
+    color: #fff7fb;
+    background: #30252f;
+    font-family: 'Nunito', sans-serif;
+    font-size: 2vh;
+    font-weight: 400;
+    caret-color: #ff9bcf;
+    box-shadow: inset 0 0 0 1px rgba(255, 155, 207, 0.45);
+}
+
+#menu input.purete-name-input::placeholder {
+    color: #c7b7c4;
+}
+
+#menu input.purete-name-input:focus {
+    outline: 2px solid #ff9bcf;
+    outline-offset: 2px;
+}
+
+#menu .suivant-button {
+    position: absolute;
+    top: 4.2vh;
+    margin: 0 auto;
+
+    font-size: 2vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 5%;
+    width: 30%;
+    border-radius: 1.5vh;
+}
+
+/* ----------------------------- */
+/* Commandes pour ajouter ou retirer un joueur */
+/* ----------------------------- */
+
+#menu .delete-input {
+    border: none;
+    background: linear-gradient(145deg, #f36b7a, #b92543);
+    color: white;
+    border-radius: 50%;
+    width: 4vh;
+    height: 4vh;
+    font-size: 1.4vh;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), 0 3px 8px rgba(90, 8, 24, 0.35);
+    transition: box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+#menu .add-input {
+    position: absolute;
+    bottom: calc(100% + 0.6vh);
+    right: 0;
+    border: none;
+    border-radius: 50%;
+    width: 4vh;
+    height: 4vh;
+    background: linear-gradient(145deg, #fff2aa, #e9bd48);
+    color: black;
+    font-size: 2vh;
+    font-weight: 800;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0 1vh 0 0;
+    aspect-ratio: 1;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65), 0 4px 10px rgba(0, 0, 0, 0.28);
+    transition: box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+#menu .add-input:hover {
+    color: black;
+    transform: none;
+    filter: brightness(1.06);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75), 0 4px 12px rgba(0, 0, 0, 0.32);
+}
+
+#menu .delete-input:hover {
+    color: white;
+    transform: none;
+    filter: brightness(1.12);
+    box-shadow: 0 5px 12px rgba(90, 8, 24, 0.45);
+}
+
+#menu .add-input:active,
+#menu .delete-input:active {
+    transform: none;
+    filter: brightness(0.94);
+}
+
+#menu .add-input:focus-visible,
+#menu .delete-input:focus-visible {
+    outline: 3px solid white;
+    outline-offset: 3px;
+}
+
+/* ----------------------------- */
+/* Choix du mode et de la difficulté */
+/* ----------------------------- */
+
+#difficulty-buttons,
+#qdn-difficulty-buttons,
+#qdn-round-buttons,
+#ActionTruthButtons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 1vh;
+    margin-top: 0vh;
+}
+
+#difficulty-buttons button,
+#qdn-difficulty-buttons button,
+#qdn-round-buttons button,
+#ActionTruthButtons button {
+    width: 72%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+#ActionTruthButtons button {
+    height: 5vh;
+}
+
+#difficulty-buttons button,
+#qdn-difficulty-buttons button,
+#qdn-round-buttons button {
+    height: 5vh;
+}
+
+#difficulty-buttons .btn1,
+#qdn-difficulty-buttons .btn1,
+#qdn-round-buttons .btn1 {
+    background: linear-gradient(135deg, #9beccf, #dcedc1);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn2,
+#qdn-difficulty-buttons .btn2,
+#qdn-round-buttons .btn2 {
+    background: linear-gradient(135deg, #ffd900, #ffaaa5);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn3,
+#qdn-difficulty-buttons .btn3,
+#qdn-round-buttons .btn3 {
+    background: linear-gradient(135deg, #ff3300, #ffaaa5);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn4,
+#qdn-difficulty-buttons .btn4,
+#qdn-round-buttons .btn4 {
+    background: linear-gradient(135deg, #ff0000, #ff4757);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn5,
+#qdn-difficulty-buttons .btn5,
+#qdn-round-buttons .btn5 {
+    background: linear-gradient(135deg, #ff69b4, #ffb6c1);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#difficulty-buttons .btn6,
+#qdn-difficulty-buttons .btn6,
+#qdn-round-buttons .btn6 {
+    background: linear-gradient(135deg, #a331fb, #fe3ee1);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+/* ----------------------------- */
+/* Joueur actif, défi et commandes Action/Vérité */
+/* ----------------------------- */
+
+#menu #player-turn {
+    font-size: 2.6vh;
+    font-weight: 700;
+    margin-top: 0.2vh;
+    margin-bottom: 0.8vh;
+    color: #fff7b2;
+    text-shadow: 0 0 8px rgba(255, 247, 178, 0.7), 0 0 16px rgba(255, 140, 180, 0.5);
+}
+
+#menu #chill-prompt {
+    font-size: 2.2vh;
+    font-weight: 600;
+    width: 85%;
+    white-space: normal;
+    line-height: 1.5;
+    margin-top: 6vh;
+    margin-bottom: 1vh;
+    color: #ffffff;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.25), 0 0 12px rgba(242, 182, 198, 0.35);
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1.2vh;
+    padding: 1vh 1.2vw;
+}
+
+/* ----------------------------- */
+/* Interface et résultats de Qui de nous ? */
+/* ----------------------------- */
+
+#menu #qdn-round-count {
+    color: #fff7b2;
+    font-size: 2vh;
+    margin: 0.5vh 0;
+}
+
+#qdn-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8vh;
+    width: 80%;
+    max-height: 34vh;
+    margin: 1vh 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    counter-reset: qdn-rank;
+}
+
+#qdn-leaderboard li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1vw;
+    padding: 0.8vh 1vw;
+    color: white;
+    font-size: 2vh;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 1vh;
+    counter-increment: qdn-rank;
+}
+
+#qdn-leaderboard li::before {
+    content: counter(qdn-rank) ".";
+    color: #fff7b2;
+    font-weight: 700;
+}
+
+#qdn-leaderboard li span {
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+#menu #qdn-question {
+    width: 85%;
+    margin: 1vh 0;
+    padding: 1vh 1.2vw;
+    color: white;
+    font-size: 2.2vh;
+    line-height: 1.4;
+    text-align: center;
+    overflow-wrap: anywhere;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1.2vh;
+}
+
+#qdn-player-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6vh;
+    width: 90%;
+}
+
+#menu #qdn-player-buttons .qdn-player-button {
+    width: 45%;
+    min-height: 4.5vh;
+    height: auto;
+    margin: 0;
+    padding: 0.8vh 1vw;
+    font-size: 1.8vh;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#menu #qdn-player-buttons .qdn-player-button[aria-pressed="true"] {
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+#menu #qdn-player-selection {
+    min-height: 2.5vh;
+    margin: 0.5vh 0;
+    color: #fff7b2;
+    font-size: 1.8vh;
+}
+
+#menu #qdn-next-round {
+    width: 55%;
+    min-height: 5vh;
+    height: auto;
+}
+
+/* ----------------------------- */
+/* Interface, progression et résultats du Test de pureté. */
+/* ----------------------------- */
+
+#menu #purete-question {
+    width: 85%;
+    margin: 1vh 0;
+    padding: 1vh 1.2vw;
+    color: white;
+    font-size: 2.2vh;
+    line-height: 1.4;
+    text-align: center;
+    overflow-wrap: anywhere;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1.2vh;
+}
+
+/* Typographie et disposition dédiées aux écrans du Test de pureté. */
+#menu-content .purete-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0 0 2vh;
+    box-sizing: border-box;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 400;
+}
+
+#menu-content .purete-screen h2 {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 400;
+}
+
+#menu-content .purete-screen button {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 400;
+}
+
+#menu #purete-progress,
+#menu #purete-player {
+    margin: 0.5vh 0;
+    color: #fff7b2;
+    font-size: 2vh;
+    text-align: center;
+}
+
+#menu #purete-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4vh;
+}
+
+#menu #purete-progress .purete-remaining {
+    color: #ffd6ef;
+    font-size: 2.2vh;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 8px rgba(255, 105, 180, 0.55);
+    background: radial-gradient(ellipse at center, #fff1a8 0%, #ff9bcf 52%, #b8f2ff 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#menu #purete-progress .purete-category {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1.6vh;
+}
+
+#purete-gender-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1vh;
+    width: 100%;
+}
+
+#menu #purete-gender-buttons button {
+    width: 72%;
+    height: 5vh;
+    margin: 0;
+}
+
+#menu #purete-gender-fille {
+    background: linear-gradient(135deg, #ff69b4, #ffb6c1);
+}
+
+#menu #purete-gender-garcon {
+    background: linear-gradient(135deg, #60a5fa, #bfdbfe);
+}
+
+#menu #purete-answer-buttons {
+    display: flex;
+    justify-content: center;
+    width: 90%;
+    gap: 1vw;
+}
+
+#menu #purete-answer-buttons button {
+    width: 42%;
+    min-height: 5vh;
+    height: auto;
+    margin: 0;
+}
+
+#menu #purete-answer-buttons .purete-yes {
+    background: linear-gradient(135deg, #f36b7a, #ffaaa5);
+}
+
+#menu #purete-answer-buttons .purete-no {
+    background: linear-gradient(135deg, #9beccf, #dcedc1);
+}
+
+/* Liste fixe des résultats par catégorie et du score global. */
+#purete-results {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    gap: 0.4vh;
+    width: 88%;
+    margin: 0.3vh 0;
+    padding: 0 0.5vw;
+    list-style: none;
+}
+
+#purete-results li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1vw;
+    padding: 0.45vh 0.8vw;
+    color: white;
+    font-size: 1.6vh;
+    line-height: 1.2;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 0.8vh;
+}
+
+#purete-results li span {
+    overflow-wrap: anywhere;
+}
+
+#purete-results li strong {
+    color: #fff7b2;
+    font-size: 1.8vh;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+#purete-results li.purete-global-score {
+    background: rgba(255, 215, 0, 0.2);
+    outline: 1px solid rgba(255, 247, 178, 0.65);
+}
+
+/* Couleurs des commandes d'Action ou Vérité. */
+#menu #ActionTruthButtons .btnAction {
+    margin-top: 1vh;
+    background: linear-gradient(135deg, #0a6cec, #3dadf8);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+#menu #ActionTruthButtons .btntruth {
+    background: linear-gradient(135deg, #ff0000, #f86969);
+    background-size: 400% 400%;
+    animation: gradientMove 6s ease infinite;
+}
+
+/* ----------------------------- */
+/* Animations partagées par les composants */
+/* ----------------------------- */
+
+@keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes moveMenu {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes backgroundMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Adaptation de l'interface aux écrans mobiles. */
+@media screen and (max-width: 768px) {
+
+    
+    #menu {
+        width: 80vw;
+        height: 70vh;
+        padding-top: 8vh;
+    }
+
+    #menu button {
+        width: 80%;
+        font-size: 2.5vh;
+    }
+
+    #menu h2,
+    #menu #player-turn,
+    #menu #chill-prompt {
+        font-size: 2.5vh;
+    }
+
+    #menu #chill-prompt {
+        font-size: 2vh;
+        width: 90%;
+    }
+
+    #menu h2 {
+        white-space: normal;
+        position: static;
+        bottom: auto;
+        margin: 0 0 1vh 0;
+    }
+
+    #menu .suivant-button {
+        position: static;
+        top: auto;
+        width: 45%;
+        height: 5vh;
+        margin: 1vh 0 2vh 0;
+    }
+
+    #menu button.btn-retour {
+        width: 55%;
+    }
+
+    #menu button.purete-menu-retour {
+        width: 75%;
+    }
+
+    #top-logo {
+        margin-bottom: 1vh;
+    }
+
+    #image-logo {
+        width: 65vw;
+        max-width: 320px;
+        height: auto;
+        margin-bottom: 1vh;
+    }
+
+    #menu .add-input {
+        width: 3vh;
+        height: 3vh;
+        min-height: 0;
+        padding: 0;
+        margin: 0;
+
+        font-size: 2vh;
+        font-weight: 800;
+        line-height: 1;
+
+        border-radius: 50%;
+        right: 0;
+    }
+
+    #menu .delete-input {
+        width: 3vh;
+        height: 3vh;
+        min-height: 3vh;
+        padding: 0;
+        margin: 0;
+
+        font-size: 2.2vh;
+        line-height: 1;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    #menu #input-list,
+    #menu #qdn-input-list {
+        gap: 1.2vh;
+    }
+
+    #menu #qdn-question {
+        width: 90%;
+        font-size: 2vh;
+    }
+
+    #menu #qdn-player-buttons .qdn-player-button {
+        font-size: 1.8vh;
+    }
+}
