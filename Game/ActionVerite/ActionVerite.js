@@ -8,12 +8,18 @@ let champ3 = "";
 let champ4 = "";
 let champ5 = "";
 let champ6 = "";
+let actionVeriteTransitionPending = false;
+
+function stopActionVeriteSpeech() {
+    stopCirclePlaySpeech();
+}
 
 /* ----------------------------- */
 /* Saisie et validation des joueurs. */
 /* ----------------------------- */
 
 function ActionVerity() {
+    stopActionVeriteSpeech();
     fadeMenuContent(`
         <h2>Action ou Vérité</h2>
         <button class="suivant-button" id="suivant-btn" onclick="goToDifficultyIfReady()">Suivant</button>
@@ -123,6 +129,7 @@ function goToDifficultyIfReady() {
 /* ----------------------------- */
 
 function ActionVerityDiff() {
+    stopActionVeriteSpeech();
     fadeMenuContent(`
         <h2>Choisissez la difficulté</h2>
         <div id="difficulty-buttons">
@@ -131,7 +138,7 @@ function ActionVerityDiff() {
             <button class="btn3" onclick="ActionVerityHard()">HARD 😈</button>
             <button class="btn4" onclick="ActionVerityExtreme()">EXTREME 🔞</button>
             <button class="btn5" onclick="ActionVerityLove()">LOVE 💕</button>
-            <button class="btn6" onclick="ActionVerityMuscu()">GO MUSCU 💪</button>
+            <button class="btn6" onclick="ActionVerityMuscu()">COMPÉTITION 💪</button>
         </div>
         <button class="btn-retour" onclick="ActionVerity()">← Retour</button>
     `);
@@ -173,6 +180,7 @@ function getDifficultyPrompt(mode, type) {
 
 /* Affiche l'écran commun à tous les modes et niveaux de difficulté. */
 function renderDifficultyScreen(mode, title) {
+    stopActionVeriteSpeech();
     fadeMenuContent(`
         <h2>${title}</h2>
         <p id="player-turn">${getRandomPlayerName()}</p>
@@ -182,7 +190,8 @@ function renderDifficultyScreen(mode, title) {
         </div>
         <button id="next-${mode}-btn" style="display:none;" onclick="showDifficultyChoices('${mode}')">Suivant</button>
         <p id="chill-prompt">Choisis une option</p>
-        <button class="btn-retour" onclick="ActionVerityDiff()">← Retour</button>
+        <button id="speak-prompt-btn" class="speak-prompt-button" data-voice-replay style="display:none;" onclick="replayCirclePlaySpeech()">🔊 Réécouter</button>
+        ${getVoiceControlsFooterMarkup("← Retour", "ActionVerityDiff()")}
     `);
 }
 
@@ -193,41 +202,101 @@ function getRandomPlayerName() {
     return names[Math.floor(Math.random() * names.length)];
 }
 
+function fadeDifficultyControls(mode, update) {
+    if (actionVeriteTransitionPending) return;
+
+    const controls = [
+        document.getElementById("player-turn"),
+        document.getElementById("ActionTruthButtons"),
+        document.getElementById("chill-prompt"),
+        document.getElementById("speak-prompt-btn"),
+        document.getElementById(`next-${mode}-btn`)
+    ].filter(Boolean);
+
+    if (controls.length === 0) return;
+
+    actionVeriteTransitionPending = true;
+    controls.forEach(control => {
+        control.style.opacity = "0";
+    });
+
+    setTimeout(() => {
+        if (controls.every(control => control.isConnected)) {
+            update();
+            controls.forEach(control => {
+                control.style.opacity = "1";
+            });
+        }
+        actionVeriteTransitionPending = false;
+    }, 180);
+}
+
+function speakDifficultyPrompt(text) {
+    if (!text) {
+        const player = document.getElementById("player-turn")?.textContent || "";
+        const prompt = document.getElementById("chill-prompt")?.textContent || "";
+        text = `${player}. ${prompt}`;
+    }
+    speakCirclePlayText(text);
+}
+
 /* Affiche le défi choisi et prépare le bouton pour passer au tour suivant. */
 function showDifficultyPrompt(mode, type) {
-    const promptElement = document.getElementById("chill-prompt");
-    const actionButton = document.querySelector(".btnAction");
-    const truthButton = document.querySelector(".btntruth");
-    const nextButton = document.getElementById(`next-${mode}-btn`);
+    if (actionVeriteTransitionPending) return;
 
-    if (promptElement) {
-        promptElement.innerHTML = getDifficultyPrompt(mode, type);
+    const prompt = getDifficultyPrompt(mode, type);
+    const promptText = document.createElement("div");
+    promptText.innerHTML = prompt;
+    const speakButton = document.getElementById("speak-prompt-btn");
+
+    if (speakButton) {
+        const speechAvailable = isCirclePlaySpeechAvailable();
+        speakButton.style.display = "block";
+        speakButton.textContent = speechAvailable ? "🔊 Réécouter" : "Synthèse vocale indisponible";
+        speakButton.disabled = !speechAvailable || !circlePlayVoiceEnabled;
     }
 
-    if (actionButton) actionButton.style.display = "none";
-    if (truthButton) truthButton.style.display = "none";
-    if (nextButton) nextButton.style.display = "block";
+    fadeDifficultyControls(mode, () => {
+        const promptElement = document.getElementById("chill-prompt");
+        const actionButton = document.querySelector(".btnAction");
+        const truthButton = document.querySelector(".btntruth");
+        const nextButton = document.getElementById(`next-${mode}-btn`);
+
+        if (promptElement) {
+            promptElement.innerHTML = prompt;
+        }
+
+        if (actionButton) actionButton.style.display = "none";
+        if (truthButton) truthButton.style.display = "none";
+        if (nextButton) nextButton.style.display = "block";
+        speakDifficultyPrompt(`${document.getElementById("player-turn")?.textContent || ""}. ${promptText.textContent}`);
+    });
 }
 
 /* Réinitialise l'écran et choisit le joueur du prochain tour. */
 function showDifficultyChoices(mode) {
-    const actionButton = document.querySelector(".btnAction");
-    const truthButton = document.querySelector(".btntruth");
-    const nextButton = document.getElementById(`next-${mode}-btn`);
-    const playerElement = document.getElementById("player-turn");
-    const promptElement = document.getElementById("chill-prompt");
+    stopActionVeriteSpeech();
+    fadeDifficultyControls(mode, () => {
+        const actionButton = document.querySelector(".btnAction");
+        const truthButton = document.querySelector(".btntruth");
+        const nextButton = document.getElementById(`next-${mode}-btn`);
+        const playerElement = document.getElementById("player-turn");
+        const promptElement = document.getElementById("chill-prompt");
+        const speakButton = document.getElementById("speak-prompt-btn");
 
-    if (playerElement) {
-        playerElement.textContent = getRandomPlayerName();
-    }
+        if (playerElement) {
+            playerElement.textContent = getRandomPlayerName();
+        }
 
-    if (promptElement) {
-        promptElement.textContent = "Choisis une option";
-    }
+        if (promptElement) {
+            promptElement.textContent = "Choisis une option";
+        }
+        if (speakButton) speakButton.style.display = "none";
 
-    if (actionButton) actionButton.style.display = "inline-flex";
-    if (truthButton) truthButton.style.display = "inline-flex";
-    if (nextButton) nextButton.style.display = "none";
+        if (actionButton) actionButton.style.display = "inline-flex";
+        if (truthButton) truthButton.style.display = "inline-flex";
+        if (nextButton) nextButton.style.display = "none";
+    });
 }
 
 /* Affiche un défi du mode Chill. */

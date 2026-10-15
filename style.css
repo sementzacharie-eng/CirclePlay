@@ -114,7 +114,7 @@ body {
     white-space: nowrap;
 
     cursor: pointer;
-    transition: all 0.25s ease-in-out;
+    transition: opacity 0.18s ease, box-shadow 0.25s ease-in-out, transform 0.25s ease-in-out, color 0.25s ease-in-out;
     
 }
 
@@ -155,6 +155,7 @@ body {
                 0 0 40px rgba(255, 200, 210, 0.3);
     transform: scale(1.1);
     color: black;
+    opacity: 0.88;
 }
 
 /* ----------------------------- */
@@ -714,6 +715,55 @@ body {
     animation: gradientMove 6s ease infinite;
 }
 
+#menu #ActionTruthButtons,
+#menu #chill-prompt {
+    transition: opacity 0.18s ease;
+}
+
+#menu .speak-prompt-button,
+#menu [id^="next-"] {
+    transition: opacity 0.18s ease, box-shadow 0.25s ease-in-out, transform 0.25s ease-in-out, color 0.25s ease-in-out;
+}
+
+#menu .speak-prompt-button {
+    width: 45%;
+    height: 7%;
+    min-height: 36px;
+    margin: 0.5vh auto;
+    padding: 0.5vh 1vw;
+    font-size: 1.8vh;
+}
+
+.voice-controls-footer {
+    position: absolute;
+    bottom: 3vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1vw;
+    width: 100%;
+}
+
+#menu .voice-controls-footer .btn-retour,
+#menu .voice-controls-footer .voice-toggle-button {
+    position: static;
+    width: 38%;
+    height: 8%;
+    min-height: 36px;
+    margin: 0;
+    padding: 0.5vh 1vw;
+    border-radius: 1.5vh;
+    font-size: 1.8vh;
+}
+
+#menu .voice-controls-footer .voice-toggle-button {
+    background: linear-gradient(135deg, #9beccf, #dcedc1);
+}
+
+#menu .voice-controls-footer .voice-toggle-button[aria-pressed="false"] {
+    background: linear-gradient(135deg, #d3c4d0, #a99aa8);
+}
+
 /* ----------------------------- */
 /* Animations partagées par les composants */
 /* ----------------------------- */
@@ -757,7 +807,6 @@ body {
 /* Adaptation de l'interface aux écrans mobiles. */
 @media screen and (max-width: 768px) {
 
-    
     #menu {
         width: 80vw;
         height: 70vh;
@@ -767,6 +816,27 @@ body {
     #menu button {
         width: 80%;
         font-size: 2.5vh;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    #menu button:hover {
+        box-shadow: 0 0 10px rgba(242, 182, 198, 0.35),
+                    0 0 20px rgba(242, 224, 138, 0.25);
+        transform: none;
+        color: black;
+        opacity: 1;
+    }
+
+    #menu .add-input:hover {
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65), 0 4px 10px rgba(0, 0, 0, 0.28);
+        filter: none;
+    }
+
+    #menu .delete-input:hover {
+        color: white;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), 0 3px 8px rgba(90, 8, 24, 0.35);
+        filter: none;
     }
 
     #menu h2,
@@ -801,6 +871,20 @@ body {
 
     #menu button.purete-menu-retour {
         width: 75%;
+    }
+
+    #menu .voice-controls-footer {
+        gap: 2vw;
+    }
+
+    #menu .voice-controls-footer .btn-retour,
+    #menu .voice-controls-footer .voice-toggle-button {
+        width: 42%;
+        min-height: 4.5vh;
+        padding: 0.5vh 1vw;
+        font-size: 1.8vh;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     #top-logo {

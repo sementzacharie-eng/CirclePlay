@@ -213,8 +213,12 @@ function renderQuiDeNousRound() {
         <div id="qdn-player-buttons">${playerButtons}</div>
         <p id="qdn-player-selection" aria-live="polite">Choisissez un joueur.</p>
         <button id="qdn-next-round" onclick="completeQuiDeNousRound()" disabled>Manche suivante</button>
-        <button class="btn-retour" onclick="QuiDeNousDiff()">← Difficultés</button>
-    `);
+        ${getVoiceReplayButtonMarkup()}
+        ${getVoiceControlsFooterMarkup("← Difficultés", "QuiDeNousDiff()")}
+    `, () => {
+        document.querySelector("[data-voice-replay]")?.style.setProperty("display", "block");
+        speakCirclePlayText(`Qui de nous ? ${question.text}`);
+    });
 }
 
 /* ----------------------------- */
@@ -234,7 +238,8 @@ function selectQuiDeNousPlayer(playerIndex) {
     const selection = document.getElementById("qdn-player-selection");
     const points = quiDeNousLastQuestion.points;
     const pointLabel = points > 0 ? `+${points} points` : `${points} point`;
-    if (selection) selection.textContent = `${quiDeNousPlayers[playerIndex]} est sélectionné(e) (${pointLabel}). Cliquez sur un autre joueur pour changer.`;
+    if (selection) selection.textContent = `${quiDeNousPlayers[playerIndex]} : ${pointLabel}`;
+    speakCirclePlayText(`${quiDeNousPlayers[playerIndex]}. ${quiDeNousLastQuestion.text}. ${pointLabel}`);
 
     const nextButton = document.getElementById("qdn-next-round");
     if (nextButton) {

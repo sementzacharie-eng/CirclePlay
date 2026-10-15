@@ -181,9 +181,13 @@ function renderPureteQuestion() {
             <button class="purete-yes" onclick="answerPureteQuestion(true)">Oui</button>
             <button class="purete-no" onclick="answerPureteQuestion(false)">Non</button>
         </div>
-        <button class="btn-retour" onclick="TestDePurete()">← Quitter</button>
+        ${getVoiceReplayButtonMarkup()}
+        ${getVoiceControlsFooterMarkup("← Quitter", "TestDePurete()")}
         </div>
-    `);
+    `, () => {
+        document.querySelector("[data-voice-replay]")?.style.setProperty("display", "block");
+        speakCirclePlayText(`${puretePlayer}. ${question.text}`);
+    });
     setTimeout(() => {
         pureteAnswerLocked = false;
     }, 200);
