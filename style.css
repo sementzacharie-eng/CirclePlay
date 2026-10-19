@@ -85,6 +85,47 @@ body {
     transition: opacity 0.18s ease;
 }
 
+#account-indicator {
+    position: absolute;
+    top: 1.5vh;
+    right: 1.5vw;
+    z-index: 2;
+    max-width: calc(100% - 3vw);
+    padding: 0.55vh 0.9vw;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: clamp(10px, 1.4vh, 13px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+}
+
+#account-indicator::before {
+    display: inline-block;
+    width: 0.65em;
+    height: 0.65em;
+    margin-right: 0.5em;
+    vertical-align: 0.02em;
+    content: "";
+    background: #8be0ad;
+    border-radius: 50%;
+    box-shadow: 0 0 7px rgba(139, 224, 173, 0.65);
+}
+
+#account-indicator[hidden] {
+    display: none;
+}
+
+#menu:has(.auth-view) {
+    padding-top: 1vh;
+}
+
+#menu-content:has(.auth-view) {
+    padding-top: 1vh;
+}
+
 /* ----------------------------- */
 /* Style commun des boutons du menu */
 /* ----------------------------- */
@@ -765,6 +806,148 @@ body {
 }
 
 /* ----------------------------- */
+/* Formulaires de compte */
+/* ----------------------------- */
+
+#menu .auth-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    gap: 0.8vh;
+    padding: 1vh 2vw 8vh;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+#menu .auth-view h2 {
+    flex-shrink: 0;
+    position: static;
+    bottom: auto;
+    margin: 0;
+    font-size: clamp(20px, 2.8vh, 28px);
+}
+
+#menu .auth-avatar {
+    display: grid;
+    flex-shrink: 0;
+    width: clamp(36px, 5vh, 50px);
+    height: clamp(36px, 5vh, 50px);
+    place-items: center;
+    color: #362832;
+    font-size: clamp(22px, 3vh, 30px);
+    line-height: 1;
+    background: linear-gradient(135deg, #f2b6c6, #f2e08a);
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(242, 182, 198, 0.25);
+}
+
+#menu .auth-hint,
+#menu .auth-status {
+    width: 85%;
+    margin: 0;
+    color: rgba(255, 240, 246, 0.78);
+    font-size: clamp(12px, 1.6vh, 15px);
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+#menu .auth-status:empty {
+    display: none;
+}
+
+#menu .auth-error {
+    color: #ffb5bd;
+}
+
+#menu .auth-form {
+    display: flex;
+    flex-direction: column;
+    width: min(82%, 340px);
+    gap: 0.65vh;
+    margin-top: 0.5vh;
+}
+
+#menu .auth-form label {
+    margin-top: 0.35vh;
+    color: rgba(255, 240, 246, 0.92);
+    font-size: clamp(12px, 1.6vh, 15px);
+    font-weight: 700;
+}
+
+#menu .auth-form input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0.8vh 1vw;
+    color: #29232a;
+    font-size: clamp(14px, 1.8vh, 17px);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+#menu .auth-form input:focus {
+    border-color: #f2b6c6;
+    box-shadow: 0 0 0 3px rgba(242, 182, 198, 0.22);
+}
+
+#menu .auth-form input::placeholder {
+    color: #8b8089;
+}
+
+#menu .auth-view .auth-form .auth-submit {
+    width: 100%;
+    min-height: 46px;
+    height: auto;
+    margin: 1.2vh 0 0;
+    padding: 0.9vh 1vw;
+    font-size: clamp(14px, 1.8vh, 17px);
+    font-weight: 800;
+    border-radius: 12px;
+}
+
+#menu .auth-view .auth-form button,
+#menu .auth-view > button:not(.btn-retour) {
+    position: static;
+    width: 100%;
+    height: auto;
+    min-height: 4.5vh;
+    margin: 0.5vh 0;
+    padding: 0.8vh 1vw;
+    font-size: 1.8vh;
+    white-space: normal;
+}
+
+#menu .auth-view > .auth-switch {
+    min-height: 36px;
+    margin-top: 0;
+    padding: 0.4vh 1vw;
+    background: transparent;
+    color: #f5d6e2;
+    font-size: clamp(12px, 1.55vh, 15px);
+    box-shadow: none;
+    animation: none;
+}
+
+#menu .auth-view > .auth-switch:hover {
+    color: #fff;
+    text-decoration: underline;
+    box-shadow: none;
+    transform: none;
+}
+
+#menu .auth-view .auth-logout {
+    min-height: 44px;
+    margin-top: 1vh;
+    border-radius: 12px;
+}
+
+/* ----------------------------- */
 /* Animations partagées par les composants */
 /* ----------------------------- */
 
@@ -885,6 +1068,28 @@ body {
         font-size: 1.8vh;
         white-space: normal;
         overflow-wrap: anywhere;
+    }
+
+    #account-indicator {
+        top: 1.4vh;
+        right: 3vw;
+        max-width: calc(100% - 6vw);
+        padding: 0.6vh 2vw;
+    }
+
+    #menu .auth-view {
+        padding-right: 5vw;
+        padding-left: 5vw;
+    }
+
+    #menu .auth-form {
+        width: min(88%, 340px);
+    }
+
+    #menu .auth-form input {
+        min-height: 44px;
+        padding-right: 2.5vw;
+        padding-left: 2.5vw;
     }
 
     #top-logo {
