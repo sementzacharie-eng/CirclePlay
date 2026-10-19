@@ -119,10 +119,12 @@ const createUser = database.prepare(
 );
 
 app.disable("x-powered-by");
+if (isProduction) app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "10kb" }));
 const sessionMiddleware = session({
     name: "circleplay.sid",
+    proxy: isProduction,
     secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex"),
     resave: false,
     saveUninitialized: false,

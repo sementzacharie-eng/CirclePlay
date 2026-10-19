@@ -185,13 +185,18 @@ function setGlobalChatAccount(user) {
     socket.on("connect_error", error => {
         if (error.message === "AUTH_REQUIRED") {
             status.textContent = "Connecte-toi pour accéder au chat.";
+            presence.textContent = "Connexion requise";
             socket.disconnect();
             return;
         }
-        status.textContent = "Reconnexion au chat...";
+        presence.textContent = "Serveur du chat indisponible";
+        status.textContent = "Connexion impossible. Nouvelle tentative en cours...";
     });
     socket.on("disconnect", () => {
-        if (panel.isConnected && !panel.hidden) status.textContent = "Reconnexion au chat...";
+        if (panel.isConnected && !panel.hidden && socket.active) {
+            presence.textContent = "Reconnexion...";
+            status.textContent = "Connexion interrompue. Nouvelle tentative en cours...";
+        }
     });
     socket.on("chat:history", history => {
         messages.replaceChildren();
