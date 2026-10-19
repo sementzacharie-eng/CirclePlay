@@ -103,10 +103,126 @@ function showMainMenu() {
 
 function setAccountIndicator(user) {
     const indicator = document.getElementById("account-indicator");
-    if (!indicator) return;
+    if (indicator) {
+        indicator.textContent = user ? `Connecté en tant que ${user.username}` : "";
+        indicator.hidden = !user;
+    }
+    setGlobalChatAccount(user);
+}
 
-    indicator.textContent = user ? `Connecté en tant que ${user.username}` : "";
-    indicator.hidden = !user;
+function appendChatMessage(message) {
+    const messages = document.getElementById("chat-messages");
+    if (!messages || !message) return;
+
+    const item = document.createElement("li");
+    item.className = "chat-message";
+
+    const heading = document.createElement("div");
+    heading.className = "chat-message-heading";
+
+    const username = document.createElement("strong");
+    username.textContent = message.username;
+    heading.appendChild(username);
+
+    const time = document.createElement("time");
+    const sentAt = new Date(message.sentAt);
+    if (!Number.isNaN(sentAt.getTime())) {
+        time.dateTime = sentAt.toISOString();
+        time.textContent = sentAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    heading.appendChild(time);
+
+    const text = document.createElement("p");
+    text.textContent = message.text;
+    item.append(heading, text);
+    messages.appendChild(item);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function setGlobalChatAccount(user) {
+    const panel = document.getElementById("global-chat");
+    if (!panel) return;
+
+    if (!user) {
+        panel.hidden = true;
+        if (window.circlePlayChatSocket) {
+            window.circlePlayChatSocket.disconnect();
+            window.circlePlayChatSocket = null;
+        }
+        return;
+    }
+
+    panel.hidden = false;
+    if (window.circlePlayChatSocket || typeof window.io !== "function") return;
+
+    const socket = window.io();
+    window.circlePlayChatSocket = socket;
+    const status = document.getElementById("chat-status");
+    const messages = document.getElementById("chat-messages");
+    const presence = document.getElementById("chat-presence");
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("chat-input");
+    const toggle = document.getElementById("chat-toggle");
+
+    if (window.matchMedia("(max-width: 768px)").matches) {
+        panel.classList.add("is-collapsed");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Ouvrir le chat");
+        toggle.textContent = "+";
+    }
+
+    toggle.addEventListener("click", () => {
+        const collapsed = panel.classList.toggle("is-collapsed");
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+        toggle.setAttribute("aria-label", collapsed ? "Ouvrir le chat" : "Réduire le chat");
+        toggle.textContent = collapsed ? "+" : "−";
+    });
+
+    socket.on("connect", () => {
+        status.textContent = "Chat en direct.";
+        status.classList.remove("chat-error");
+    });
+    socket.on("connect_error", error => {
+        if (error.message === "AUTH_REQUIRED") {
+            status.textContent = "Connecte-toi pour accéder au chat.";
+            socket.disconnect();
+            return;
+        }
+        status.textContent = "Reconnexion au chat...";
+    });
+    socket.on("disconnect", () => {
+        if (panel.isConnected && !panel.hidden) status.textContent = "Reconnexion au chat...";
+    });
+    socket.on("chat:history", history => {
+        messages.replaceChildren();
+        history.forEach(appendChatMessage);
+    });
+    socket.on("chat:message", appendChatMessage);
+    socket.on("chat:presence", count => {
+        presence.textContent = `${count} ${count === 1 ? "personne en ligne" : "personnes en ligne"}`;
+    });
+
+    form.addEventListener("submit", event => {
+        event.preventDefault();
+        const message = input.value.trim();
+        if (!message || !socket.connected) {
+            status.textContent = socket.connected
+                ? "Écris un message avant de l'envoyer."
+                : "Le chat est déconnecté, reconnexion en cours...";
+            return;
+        }
+
+        socket.emit("chat:send", message, result => {
+            if (result && result.error) {
+                status.textContent = result.error;
+                status.classList.add("chat-error");
+                return;
+            }
+            status.textContent = "Chat en direct.";
+            status.classList.remove("chat-error");
+            input.value = "";
+        });
+    });
 }
 
 async function refreshAccountIndicator() {

@@ -1,8 +1,7 @@
 # CirclePlay
 
-CirclePlay contient ses jeux web et un premier serveur Node.js pour les comptes.
-Cette étape met en place la création de compte et la connexion ; les parties en
-ligne et leur synchronisation seront développées ensuite.
+CirclePlay contient ses jeux web, un serveur Node.js pour les comptes et un chat
+global en temps réel réservé aux comptes connectés.
 
 ## Étape 1 — Installer Node.js
 
@@ -54,6 +53,14 @@ Depuis **Profil**, chacun peut créer un compte avec un pseudo de 3 à 20 lettre
 chiffres ou tirets bas et un mot de passe d'au moins 10 caractères. Les mots de
 passe sont hachés avant stockage ; les comptes et les sessions sont conservés
 dans le dossier local `data/`, qui n'est pas servi au navigateur.
+
+## Chat global
+
+Le chat apparaît uniquement aux comptes connectés. Il utilise une connexion
+temps réel, limite les messages à 500 caractères et à un message par seconde par
+compte, puis conserve temporairement les 50 derniers messages en mémoire du
+serveur. Les messages et l'historique sont perdus au redémarrage du serveur ;
+ils ne sont pas enregistrés dans la base SQLite.
 
 Pour un hébergement public, configure `NODE_ENV=production`, une
 `SESSION_SECRET` aléatoire et HTTPS ; ne réutilise pas la clé d'exemple. En

@@ -24,6 +24,27 @@
                 <button onclick="showCredits()">Crédits 👑</button>
             </div>
         </div>
+
+        <aside id="global-chat" aria-label="Chat global" hidden>
+            <header class="chat-header">
+                <div class="chat-heading">
+                    <h2>Chat global</h2>
+                    <p id="chat-presence" aria-live="polite">Connexion...</p>
+                </div>
+                <button id="chat-toggle" type="button" aria-expanded="true" aria-label="Réduire le chat">−</button>
+            </header>
+            <div class="chat-body">
+                <ol id="chat-messages" aria-label="Messages du chat" aria-live="polite"></ol>
+                <p id="chat-status" role="status" aria-live="polite">Connexion au chat...</p>
+                <form id="chat-form">
+                    <label class="visually-hidden" for="chat-input">Ton message</label>
+                    <input id="chat-input" name="message" type="text" maxlength="500"
+                        autocomplete="off" placeholder="Écris un message..." required>
+                    <button type="submit" aria-label="Envoyer le message">➤</button>
+                </form>
+                <p class="chat-note">Messages temporaires · 500 caractères max.</p>
+            </div>
+        </aside>
     </div>
 
     <!-- Questions et défis d'Action ou Vérité. -->
@@ -40,6 +61,8 @@
     <script src="Game/TestDePurete/Classique.js"></script>
     <script src="Game/TestDePurete/Hard.js"></script>
     <script src="Game/TestDePurete/SpecialSex.js"></script>
+    <!-- Client temps réel du chat en ligne. -->
+    <script src="/socket.io/socket.io.js"></script>
     <!-- Navigation principale de l'application. -->
     <script src="script.js"></script>
     <!-- Logique de Qui de nous ?, d'Action ou Vérité et du Test de pureté. -->

@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
+const http = require("node:http");
 const path = require("node:path");
 require("dotenv").config();
 
@@ -9,6 +10,7 @@ const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { rateLimit } = require("express-rate-limit");
 const helmet = require("helmet");
+const { Server } = require("socket.io");
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -119,7 +121,7 @@ const createUser = database.prepare(
 app.disable("x-powered-by");
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "10kb" }));
-app.use(session({
+const sessionMiddleware = session({
     name: "circleplay.sid",
     secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex"),
     resave: false,
@@ -131,7 +133,8 @@ app.use(session({
         secure: isProduction,
         maxAge: 7 * 24 * 60 * 60 * 1000
     }
-}));
+});
+app.use(sessionMiddleware);
 
 const authRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -224,8 +227,12 @@ app.post("/api/auth/login", authRateLimit, async (req, res, next) => {
 });
 
 app.post("/api/auth/logout", (req, res, next) => {
+    const sessionId = req.sessionID;
     req.session.destroy(error => {
         if (error) return next(error);
+        for (const socket of io.sockets.sockets.values()) {
+            if (socket.data.sessionId === sessionId) socket.disconnect(true);
+        }
         res.clearCookie("circleplay.sid", {
             httpOnly: true,
             sameSite: "lax",
@@ -249,6 +256,70 @@ app.use((error, _req, res, _next) => {
     res.status(500).json({ error: "Une erreur interne est survenue." });
 });
 
-app.listen(port, () => {
+const server = http.createServer(app);
+const io = new Server(server, {
+    maxHttpBufferSize: 8 * 1024
+});
+const chatHistory = [];
+const lastMessageByUser = new Map();
+const maxChatHistory = 50;
+const maxMessageLength = 500;
+
+io.engine.use(sessionMiddleware);
+io.use((socket, next) => {
+    const userId = socket.request.session && socket.request.session.userId;
+    const user = userId ? findUserById.get(userId) : null;
+    if (!user) return next(new Error("AUTH_REQUIRED"));
+
+    socket.data.user = user;
+    socket.data.sessionId = socket.request.sessionID;
+    next();
+});
+
+io.on("connection", socket => {
+    socket.emit("chat:history", chatHistory);
+    io.emit("chat:presence", io.of("/").sockets.size);
+
+    socket.on("chat:send", (message, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        if (typeof message !== "string") {
+            return reply({ error: "Le message doit être du texte." });
+        }
+
+        const text = message.trim();
+        if (!text || text.length > maxMessageLength) {
+            return reply({ error: `Le message doit contenir de 1 à ${maxMessageLength} caractères.` });
+        }
+
+        const now = Date.now();
+        if (lastMessageByUser.size > 1000) {
+            for (const [userId, sentAt] of lastMessageByUser) {
+                if (now - sentAt > 60_000) lastMessageByUser.delete(userId);
+            }
+        }
+        const lastSent = lastMessageByUser.get(socket.data.user.id) || 0;
+        if (now - lastSent < 1000) {
+            return reply({ error: "Attends une seconde avant d'envoyer un autre message." });
+        }
+
+        lastMessageByUser.set(socket.data.user.id, now);
+        const chatMessage = {
+            username: socket.data.user.username,
+            text,
+            sentAt: new Date(now).toISOString()
+        };
+        chatHistory.push(chatMessage);
+        if (chatHistory.length > maxChatHistory) chatHistory.shift();
+
+        io.emit("chat:message", chatMessage);
+        reply({ ok: true });
+    });
+
+    socket.on("disconnect", () => {
+        io.emit("chat:presence", io.of("/").sockets.size);
+    });
+});
+
+server.listen(port, () => {
     console.log(`CirclePlay est disponible sur http://localhost:${port}`);
 });

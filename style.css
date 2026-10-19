@@ -948,6 +948,237 @@ body {
 }
 
 /* ----------------------------- */
+/* Fenêtre du chat global */
+/* ----------------------------- */
+
+#global-chat {
+    position: fixed;
+    top: 50%;
+    right: 2vw;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    width: 23vw;
+    height: 62vh;
+    overflow: hidden;
+    color: #f7f3f5;
+    background: linear-gradient(145deg, #39363a, #29272b);
+    border: 0.08vw solid rgba(255, 255, 255, 0.12);
+    border-radius: 1.4vw;
+    box-shadow: 0 1.2vh 3vh rgba(37, 25, 34, 0.3);
+    box-sizing: border-box;
+    transform: translateY(-50%);
+}
+
+#global-chat[hidden] {
+    display: none;
+}
+
+#global-chat .chat-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 7vh;
+    padding: 0.8vh 0.9vw;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 0.08vw solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+}
+
+#global-chat .chat-heading {
+    min-width: 0;
+}
+
+#global-chat .chat-heading h2 {
+    margin: 0;
+    color: #f5c7d7;
+    font-size: 2vh;
+    line-height: 1.2;
+}
+
+#global-chat .chat-heading p {
+    margin: 0.25vh 0 0;
+    color: #c3bdc3;
+    font-size: 1.25vh;
+}
+
+#global-chat #chat-toggle {
+    display: grid;
+    flex-shrink: 0;
+    width: 2.6vw;
+    height: 4.2vh;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    font-size: 2.2vh;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 0;
+    border-radius: 0.65vw;
+    box-shadow: none;
+    animation: none;
+}
+
+#global-chat #chat-toggle:hover {
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    transform: none;
+}
+
+#global-chat .chat-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0.8vh 0.8vw;
+    box-sizing: border-box;
+}
+
+#chat-messages {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.7vh;
+    min-height: 0;
+    margin: 0;
+    padding: 0.2vh 0.25vw;
+    overflow-y: auto;
+    list-style: none;
+}
+
+#chat-messages:empty::before {
+    align-self: center;
+    margin: auto 0;
+    color: #bdb6bd;
+    font-size: 1.45vh;
+    content: "Pas encore de message. Lance la conversation !";
+    text-align: center;
+}
+
+#chat-messages .chat-message {
+    padding: 0.65vh 0.6vw;
+    overflow-wrap: anywhere;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 0.7vw;
+}
+
+#chat-messages .chat-message-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.4vw;
+}
+
+#chat-messages .chat-message-heading strong {
+    overflow: hidden;
+    color: #f5c7d7;
+    font-size: 1.4vh;
+    text-overflow: ellipsis;
+}
+
+#chat-messages .chat-message-heading time {
+    flex-shrink: 0;
+    color: #aaa3aa;
+    font-size: 1.15vh;
+}
+
+#chat-messages .chat-message p {
+    margin: 0.35vh 0 0;
+    color: #f4eff2;
+    font-size: 1.5vh;
+    line-height: 1.35;
+    white-space: pre-wrap;
+}
+
+#chat-status {
+    min-height: 1.8vh;
+    margin: 0.45vh 0;
+    color: #bdb6bd;
+    font-size: 1.2vh;
+    overflow-wrap: anywhere;
+}
+
+#chat-status.chat-error {
+    color: #ffb5bd;
+}
+
+#chat-form {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.45vw;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 0.1vw;
+    height: 0.1vh;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+#chat-form input {
+    flex: 1;
+    min-width: 0;
+    min-height: 4.5vh;
+    padding: 0.6vh 0.65vw;
+    color: #29252a;
+    font: inherit;
+    font-size: 1.45vh;
+    background: #f6f2f4;
+    border: 0.08vw solid transparent;
+    border-radius: 0.7vw;
+    box-sizing: border-box;
+    outline: none;
+}
+
+#chat-form input:focus {
+    border-color: #f2b6c6;
+}
+
+#global-chat #chat-form button {
+    display: grid;
+    flex-shrink: 0;
+    width: 3vw;
+    height: 4.5vh;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    color: #29252a;
+    font-size: 1.8vh;
+    background: linear-gradient(135deg, #f2b6c6, #f2e08a);
+    border: 0;
+    border-radius: 0.7vw;
+    box-shadow: none;
+    animation: none;
+}
+
+#global-chat #chat-form button:hover {
+    box-shadow: none;
+    transform: none;
+}
+
+#global-chat .chat-note {
+    flex-shrink: 0;
+    margin: 0.55vh 0 0;
+    color: #a9a2a9;
+    font-size: 1.1vh;
+    text-align: center;
+}
+
+#global-chat.is-collapsed {
+    height: 8vh;
+}
+
+#global-chat.is-collapsed .chat-heading p,
+#global-chat.is-collapsed .chat-body {
+    display: none;
+}
+
+/* ----------------------------- */
 /* Animations partagées par les composants */
 /* ----------------------------- */
 
@@ -1090,6 +1321,99 @@ body {
         min-height: 44px;
         padding-right: 2.5vw;
         padding-left: 2.5vw;
+    }
+
+    #global-chat {
+        top: auto;
+        right: 3vw;
+        bottom: 3vh;
+        width: 90vw;
+        height: 52vh;
+        border-width: 0.2vw;
+        border-radius: 3vw;
+        transform: none;
+    }
+
+    #global-chat .chat-header {
+        min-height: 7vh;
+        padding: 0.8vh 3vw;
+        border-bottom-width: 0.2vw;
+    }
+
+    #global-chat .chat-heading h2 {
+        font-size: 2.2vh;
+    }
+
+    #global-chat .chat-heading p {
+        font-size: 1.45vh;
+    }
+
+    #global-chat #chat-toggle {
+        width: 9vw;
+        height: 4.5vh;
+        font-size: 2.5vh;
+        border-radius: 2vw;
+    }
+
+    #global-chat .chat-body {
+        padding: 1vh 2.5vw;
+    }
+
+    #chat-messages {
+        gap: 0.8vh;
+        padding: 0.3vh 0.5vw;
+    }
+
+    #chat-messages .chat-message {
+        padding: 0.8vh 2vw;
+        border-radius: 2vw;
+    }
+
+    #chat-messages .chat-message-heading strong {
+        font-size: 1.6vh;
+    }
+
+    #chat-messages .chat-message-heading time {
+        font-size: 1.3vh;
+    }
+
+    #chat-messages .chat-message p {
+        font-size: 1.7vh;
+    }
+
+    #chat-status {
+        min-height: 2vh;
+        font-size: 1.35vh;
+    }
+
+    #chat-form {
+        gap: 1.5vw;
+    }
+
+    #chat-form input {
+        min-height: 5.5vh;
+        padding: 0.8vh 2vw;
+        font-size: 1.7vh;
+        border-radius: 2vw;
+    }
+
+    #global-chat #chat-form button {
+        width: 12vw;
+        height: 5.5vh;
+        font-size: 2vh;
+        border-radius: 2vw;
+    }
+
+    #global-chat .chat-note {
+        margin-top: 0.7vh;
+        font-size: 1.25vh;
+    }
+
+    #global-chat.is-collapsed {
+        right: 4vw;
+        bottom: 3vh;
+        width: 45vw;
+        height: 8vh;
     }
 
     #top-logo {
