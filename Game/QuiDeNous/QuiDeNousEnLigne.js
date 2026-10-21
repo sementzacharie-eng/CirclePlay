@@ -3,6 +3,8 @@ let qdnOnlineRoomState = null;
 let qdnOnlineNotice = "";
 let qdnOnlineDifficulty = "CHILL";
 let qdnOnlineRounds = 10;
+let qdnOnlineSelectedVoteId = null;
+let qdnOnlineSelectionRound = null;
 
 function escapeQdnOnlineHtml(value) {
     return String(value).replace(/[&<>"']/g, character => ({
@@ -25,6 +27,10 @@ function getQdnOnlineSocket() {
     if (qdnOnlineSocket !== socket) {
         qdnOnlineSocket = socket;
         socket.on("qdn:state", state => {
+            if (state.status !== "voting" || qdnOnlineSelectionRound !== state.round) {
+                qdnOnlineSelectedVoteId = null;
+            }
+            qdnOnlineSelectionRound = state.status === "voting" ? state.round : null;
             qdnOnlineRoomState = state;
             qdnOnlineNotice = state.notice || "";
             renderQdnOnlineRoom(state);
@@ -32,6 +38,8 @@ function getQdnOnlineSocket() {
         socket.on("disconnect", () => {
             if (!qdnOnlineRoomState) return;
             qdnOnlineRoomState = null;
+            qdnOnlineSelectedVoteId = null;
+            qdnOnlineSelectionRound = null;
             qdnOnlineNotice = "Connexion interrompue : tu as quitté le salon. Reconnecte-toi pour en rejoindre un autre.";
             if (document.querySelector(".qdn-online-view")) {
                 renderQdnOnlineHome(qdnOnlineNotice);
@@ -77,6 +85,8 @@ function renderQdnOnline(content) {
 function QuiDeNousEnLigne() {
     qdnOnlineRoomState = null;
     qdnOnlineNotice = "";
+    qdnOnlineSelectedVoteId = null;
+    qdnOnlineSelectionRound = null;
     renderQdnOnlineHome();
 }
 
@@ -183,7 +193,8 @@ function renderQdnOnlineRoom(state) {
         `;
     } else if (state.status === "voting") {
         const voteButtons = state.players.map(player => `
-            <button class="qdn-online-player" type="button" data-qdn-vote="${player.id}"${state.hasVoted ? " disabled" : ""}>
+            <button class="qdn-online-player" type="button" data-qdn-vote="${player.id}"
+                aria-pressed="${qdnOnlineSelectedVoteId === player.id}"${state.hasVoted ? " disabled" : ""}>
                 ${escapeQdnOnlineHtml(player.username)}
             </button>
         `).join("");
@@ -192,9 +203,10 @@ function renderQdnOnlineRoom(state) {
             <p class="qdn-online-question">${escapeQdnOnlineHtml(state.question.text)}</p>
             <p class="qdn-online-hint">${state.hasVoted
                 ? "Ton vote est enregistré. Attends les autres joueurs."
-                : "Vote pour la personne qui correspond le mieux à la question."
+                : "Choisis une personne, puis confirme ton vote."
             }</p>
             <div class="qdn-online-vote-grid">${voteButtons}</div>
+            ${state.hasVoted ? "" : '<button type="button" data-qdn-confirm-vote disabled>Confirmer mon choix</button>'}
             <p class="qdn-online-votes" aria-live="polite">${state.votesSubmitted} / ${state.players.length} votes reçus</p>
         `;
     } else if (state.status === "reveal") {
@@ -258,7 +270,18 @@ function renderQdnOnlineRoom(state) {
     document.querySelector("[data-qdn-start]")?.addEventListener("click", () => runQdnOnlineAction("qdn:start"));
     document.querySelector("[data-qdn-next]")?.addEventListener("click", () => runQdnOnlineAction("qdn:next"));
     document.querySelectorAll("[data-qdn-vote]").forEach(button => {
-        button.addEventListener("click", () => runQdnOnlineAction("qdn:vote", Number(button.dataset.qdnVote)));
+        button.addEventListener("click", () => {
+            if (qdnOnlineRoomState?.hasVoted) return;
+            qdnOnlineSelectedVoteId = Number(button.dataset.qdnVote);
+            renderQdnOnlineRoom(qdnOnlineRoomState);
+        });
+    });
+    document.querySelector("[data-qdn-confirm-vote]")?.addEventListener("click", event => {
+        const button = event.currentTarget;
+        if (qdnOnlineSelectedVoteId === null || qdnOnlineRoomState?.hasVoted) return;
+        button.disabled = true;
+        button.textContent = "Envoi du vote…";
+        submitQdnOnlineVote(qdnOnlineSelectedVoteId);
     });
     document.querySelector("[data-qdn-leave]")?.addEventListener("click", async () => {
         try {
@@ -271,6 +294,16 @@ function renderQdnOnlineRoom(state) {
             renderQdnOnlineRoom(qdnOnlineRoomState);
         }
     });
+}
+
+async function submitQdnOnlineVote(playerId) {
+    try {
+        await requestQdnOnline("qdn:vote", playerId);
+        qdnOnlineSelectedVoteId = null;
+    } catch (error) {
+        qdnOnlineNotice = error.message;
+        renderQdnOnlineRoom(qdnOnlineRoomState);
+    }
 }
 
 async function runQdnOnlineAction(eventName, payload = null) {

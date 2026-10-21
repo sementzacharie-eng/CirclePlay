@@ -86,11 +86,11 @@ body {
 }
 
 #account-indicator {
-    position: absolute;
-    top: 1.5vh;
-    right: 1.5vw;
-    z-index: 2;
+    position: relative;
+    display: block;
+    width: fit-content;
     max-width: calc(100% - 3vw);
+    margin: 0 auto 1vh;
     padding: 0.55vh 0.9vw;
     overflow: hidden;
     color: rgba(255, 255, 255, 0.88);
@@ -259,11 +259,22 @@ body {
 #menu input[type="text"] {
     flex: 1;
     padding: 1vh 0.7vw;
-    border: none;
+    color: #fff7fb;
+    background: #30252f;
+    border: 1px solid rgba(255, 155, 207, 0.45);
     border-radius: 1vh;
     font-size: 1.6vh;
     font-family: 'Nunito', sans-serif;
     box-sizing: border-box;
+}
+
+#menu input[type="text"]::placeholder {
+    color: #c7b7c4;
+}
+
+#menu input[type="text"]:focus {
+    outline: 2px solid #ff9bcf;
+    outline-offset: 2px;
 }
 
 #menu input.purete-name-input {
@@ -1125,18 +1136,22 @@ body {
     min-width: 0;
     min-height: 4.5vh;
     padding: 0.6vh 0.65vw;
-    color: #29252a;
+    color: #fff7fb;
     font: inherit;
     font-size: 1.45vh;
-    background: #f6f2f4;
-    border: 0.08vw solid transparent;
+    background: #30252f;
+    border: 0.08vw solid rgba(255, 155, 207, 0.45);
     border-radius: 0.7vw;
     box-sizing: border-box;
     outline: none;
 }
 
 #chat-form input:focus {
-    border-color: #f2b6c6;
+    border-color: #ff9bcf;
+}
+
+#chat-form input::placeholder {
+    color: #c7b7c4;
 }
 
 #global-chat #chat-form button {
@@ -1302,9 +1317,8 @@ body {
     }
 
     #account-indicator {
-        top: 1.4vh;
-        right: 3vw;
         max-width: calc(100% - 6vw);
+        margin-bottom: 1vh;
         padding: 0.6vh 2vw;
     }
 
@@ -1555,13 +1569,18 @@ body {
     width: 100%;
     min-height: 4vh;
     padding: 0.55vh 0.7vw;
-    color: #29232a;
+    color: #fff7fb;
     font: inherit;
     font-size: clamp(13px, 1.6vh, 16px);
-    background: #fff7fb;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: #30252f;
+    border: 1px solid rgba(255, 155, 207, 0.45);
     border-radius: 0.7vh;
     box-sizing: border-box;
+}
+
+#menu .qdn-online-view select option {
+    color: #fff7fb;
+    background: #30252f;
 }
 
 #menu .qdn-online-view button:not(.btn-retour) {
@@ -1657,6 +1676,26 @@ body {
     width: 46%;
     min-height: 4vh;
     margin: 0;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+#menu .qdn-online-view .qdn-online-vote-grid button[aria-pressed="true"] {
+    color: #241b22;
+    background: linear-gradient(135deg, #ffb5d1, #fff0a6);
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+    box-shadow: 0 0 14px rgba(255, 181, 209, 0.65);
+    transform: scale(1.03);
+}
+
+#menu .qdn-online-view [data-qdn-confirm-vote] {
+    background: linear-gradient(135deg, #9beccf, #dcedc1);
+    animation: none;
+}
+
+#menu .qdn-online-view [data-qdn-confirm-vote]:disabled {
+    color: rgba(0, 0, 0, 0.55);
+    background: linear-gradient(135deg, #999197, #c5bdc2);
 }
 
 #menu .qdn-online-view .qdn-online-vote-grid button:disabled {
