@@ -175,15 +175,10 @@ function renderQdnOnlineRoom(state) {
     if (!state) return;
     const currentUserId = circlePlayCurrentUser?.id;
     const isHost = state.hostId === currentUserId;
-    const playerList = state.players.map(player => `
+    const roomPlayerList = state.players.map(player => `
         <li>
             <span>${escapeQdnOnlineHtml(player.username)}${player.id === state.hostId ? " <em>Chef</em>" : ""}</span>
             <strong>${player.score} pts</strong>
-        </li>
-    `).join("");
-    const managementList = state.players.map(player => `
-        <li>
-            <span>${escapeQdnOnlineHtml(player.username)}${player.id === state.hostId ? " <em>Chef</em>" : ""}</span>
             ${isHost && player.id !== currentUserId
                 ? `<button type="button" data-qdn-kick="${player.id}">Expulser</button>`
                 : ""}
@@ -197,7 +192,6 @@ function renderQdnOnlineRoom(state) {
             <p class="qdn-online-code-label">Code du salon</p>
             <button class="qdn-online-code" type="button" data-qdn-copy>${escapeQdnOnlineHtml(state.code)}</button>
             <p class="qdn-online-hint">Partage ce code avec tes amis · ${state.players.length}/12 joueurs</p>
-            <ol class="qdn-online-players">${playerList}</ol>
             <p class="qdn-online-hint">${isHost
                 ? state.players.length < 2
                     ? "Il faut au moins 2 joueurs pour commencer."
@@ -268,10 +262,8 @@ function renderQdnOnlineRoom(state) {
         <section class="qdn-online-view">
             <h2>Salon ${escapeQdnOnlineHtml(state.code)}</h2>
             ${body}
-            <details class="qdn-online-manage">
-                <summary>Joueurs${isHost ? " · gérer le salon" : ""}</summary>
-                <ol class="qdn-online-players">${managementList}</ol>
-            </details>
+            <h3 class="qdn-online-player-heading">Joueurs du salon</h3>
+            <ol class="qdn-online-players qdn-online-room-players">${roomPlayerList}</ol>
             <p class="qdn-online-status${qdnOnlineNotice ? " is-error" : ""}" role="${qdnOnlineNotice ? "alert" : "status"}">${escapeQdnOnlineHtml(qdnOnlineNotice)}</p>
             <button class="btn-retour" type="button" data-qdn-leave>Quitter le salon</button>
         </section>

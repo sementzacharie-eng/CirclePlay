@@ -5,6 +5,18 @@
 let circlePlayVoiceEnabled = true;
 let circlePlayCurrentSpeechText = "";
 let circlePlayCurrentUser = null;
+const circlePlayUsernameColors = [
+    { value: "#ff6b6b", label: "Rouge corail" },
+    { value: "#ff9f43", label: "Orange" },
+    { value: "#feca57", label: "Jaune doré" },
+    { value: "#1dd1a1", label: "Turquoise" },
+    { value: "#48dbfb", label: "Bleu clair" },
+    { value: "#54a0ff", label: "Bleu" },
+    { value: "#5f27cd", label: "Violet" },
+    { value: "#c56cf0", label: "Lavande" },
+    { value: "#ff6bcb", label: "Rose" },
+    { value: "#f5c7d7", label: "Rose poudré" }
+];
 
 function isCirclePlaySpeechAvailable() {
     return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
@@ -261,8 +273,13 @@ function renderSignedInProfile(profileView, user) {
         <form class="auth-color-form">
             <label for="profile-username-color">Couleur de mon pseudo</label>
             <div class="auth-color-control">
-                <input id="profile-username-color" name="usernameColor" type="color"
-                    value="${/^#[0-9a-f]{6}$/i.test(user.usernameColor || "") ? user.usernameColor : "#f5c7d7"}">
+                <select id="profile-username-color" name="usernameColor">
+                    ${circlePlayUsernameColors.map(color => `
+                        <option value="${color.value}"${user.usernameColor === color.value ? " selected" : ""}>
+                            ${color.label}
+                        </option>
+                    `).join("")}
+                </select>
                 <button class="auth-color-submit" type="submit">Enregistrer la couleur</button>
             </div>
             <p class="auth-color-status" role="status" aria-live="polite"></p>

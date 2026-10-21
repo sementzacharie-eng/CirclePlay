@@ -20,6 +20,18 @@ const qdnQuestions = {
 };
 const qdnRoundChoices = [10, 20, 30, 40, 50];
 const qdnRoomCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const usernameColors = [
+    "#ff6b6b",
+    "#ff9f43",
+    "#feca57",
+    "#1dd1a1",
+    "#48dbfb",
+    "#54a0ff",
+    "#5f27cd",
+    "#c56cf0",
+    "#ff6bcb",
+    "#f5c7d7"
+];
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -132,7 +144,7 @@ const updateUsernameColor = database.prepare(
     "UPDATE users SET username_color = ? WHERE id = ?"
 );
 const createUser = database.prepare(
-    "INSERT INTO users (username, password_hash) VALUES (?, ?)"
+    "INSERT INTO users (username, password_hash, username_color) VALUES (?, ?, ?)"
 );
 
 app.disable("x-powered-by");
@@ -212,7 +224,8 @@ app.post("/api/auth/register", authRateLimit, async (req, res, next) => {
 
     try {
         const passwordHash = await bcrypt.hash(password, 12);
-        const result = createUser.run(username, passwordHash);
+        const usernameColor = usernameColors[crypto.randomInt(usernameColors.length)];
+        const result = createUser.run(username, passwordHash, usernameColor);
         await regenerateSession(req);
         req.session.userId = Number(result.lastInsertRowid);
         await saveSession(req);
@@ -220,7 +233,7 @@ app.post("/api/auth/register", authRateLimit, async (req, res, next) => {
             user: {
                 id: Number(result.lastInsertRowid),
                 username,
-                usernameColor: "#f5c7d7"
+                usernameColor
             }
         });
     } catch (error) {
@@ -263,7 +276,7 @@ app.post("/api/auth/login", authRateLimit, async (req, res, next) => {
 
 app.post("/api/profile/color", (req, res, next) => {
     const { color } = req.body || {};
-    if (typeof color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+    if (typeof color !== "string" || !usernameColors.includes(color.toLowerCase())) {
         return res.status(400).json({ error: "Choisis une couleur valide." });
     }
     if (!req.session.userId) {

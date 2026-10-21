@@ -932,15 +932,23 @@ body {
     gap: 0.7vw;
 }
 
-#menu .auth-color-form input[type="color"] {
-    flex: 0 0 52px;
-    width: 52px;
+#menu .auth-color-form select {
+    flex: 1;
+    min-width: 0;
     height: 42px;
-    padding: 4px;
+    padding: 0.5vh 0.7vw;
+    color: #fff7fb;
+    font: inherit;
+    font-size: clamp(12px, 1.55vh, 15px);
     background: #30252f;
     border: 1px solid rgba(255, 155, 207, 0.45);
     border-radius: 9px;
-    cursor: pointer;
+    box-sizing: border-box;
+}
+
+#menu .auth-color-form select option {
+    color: #fff7fb;
+    background: #30252f;
 }
 
 #menu .auth-view .auth-color-form .auth-color-submit {
@@ -1725,26 +1733,7 @@ body {
     white-space: nowrap;
 }
 
-#menu .qdn-online-manage {
-    flex-shrink: 0;
-    width: min(90%, 380px);
-    margin: 0.4vh 0;
-    color: #fff7fb;
-    font-size: clamp(12px, 1.5vh, 15px);
-}
-
-#menu .qdn-online-manage summary {
-    width: fit-content;
-    margin: 0 auto;
-    color: #fff7b2;
-    cursor: pointer;
-}
-
-#menu .qdn-online-manage .qdn-online-players {
-    width: 100%;
-}
-
-#menu .qdn-online-manage .qdn-online-players li button {
+#menu .qdn-online-room-players li button {
     flex: 0 0 auto;
     width: auto;
     min-height: 3.4vh;
@@ -1756,7 +1745,7 @@ body {
     animation: none;
 }
 
-#menu .qdn-online-manage .qdn-online-players li button:hover {
+#menu .qdn-online-room-players li button:hover {
     color: #fff;
     transform: none;
 }
