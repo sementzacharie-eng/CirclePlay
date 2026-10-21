@@ -176,9 +176,15 @@ function renderQdnOnlineRoom(state) {
     if (!state) return;
     const currentUserId = circlePlayCurrentUser?.id;
     const isHost = state.hostId === currentUserId;
+    const roomPlayerName = player => {
+        const color = /^#[0-9a-f]{6}$/i.test(player.usernameColor || "")
+            ? player.usernameColor
+            : "#ffffff";
+        return `<span style="color: ${color};">${escapeQdnOnlineHtml(player.username)}${player.id === state.hostId ? " <em>Chef</em>" : ""}</span>`;
+    };
     const roomPlayerList = state.players.map(player => `
         <li>
-            <span>${escapeQdnOnlineHtml(player.username)}${player.id === state.hostId ? " <em>Chef</em>" : ""}</span>
+            ${roomPlayerName(player)}
             <strong>${player.score} pts</strong>
             ${isHost && player.id !== currentUserId
                 ? `<button type="button" data-qdn-kick="${player.id}">Expulser</button>`
@@ -192,20 +198,19 @@ function renderQdnOnlineRoom(state) {
             <p class="qdn-online-round">${state.difficulty} · ${state.rounds} manches</p>
             <p class="qdn-online-code-label">Code du salon</p>
             <button class="qdn-online-code" type="button" data-qdn-copy>${escapeQdnOnlineHtml(state.code)}</button>
-            <p class="qdn-online-hint">Partage ce code avec tes amis · ${state.players.length}/12 joueurs</p>
-            <p class="qdn-online-hint">${isHost
-                ? state.players.length < 2
-                    ? "Il faut au moins 2 joueurs pour commencer."
-                    : "Tout le monde est prêt ? Lance la partie !"
-                : "En attente du chef du salon…"
-            }</p>
+            <div class="qdn-online-lobby-info">
+                <span class="qdn-online-player-count" aria-label="${state.players.length} joueurs sur 12">
+                    <strong>${state.players.length}</strong><span class="qdn-online-player-count-total">/12</span>
+                    <span class="qdn-online-player-count-label">joueurs</span>
+                </span>
+            </div>
             ${isHost ? `<button type="button" data-qdn-start${state.players.length < 2 ? " disabled" : ""}>Commencer la partie</button>` : ""}
         `;
     } else if (state.status === "voting") {
         const voteButtons = state.players.map(player => `
             <button class="qdn-online-player" type="button" data-qdn-vote="${player.id}"
                 aria-pressed="${qdnOnlineSelectedVoteId === player.id}"${state.hasVoted ? " disabled" : ""}>
-                ${escapeQdnOnlineHtml(player.username)}
+                ${roomPlayerName(player)}
             </button>
         `).join("");
         body = `

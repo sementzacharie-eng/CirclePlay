@@ -293,6 +293,13 @@ app.post("/api/profile/color", (req, res, next) => {
         for (const message of chatHistory) {
             if (message.userId === user.id) message.usernameColor = user.username_color;
         }
+        for (const room of qdnRooms.values()) {
+            const player = room.players.get(user.id);
+            if (player) {
+                player.usernameColor = user.username_color;
+                broadcastQdnRoom(room);
+            }
+        }
         res.json({
             user: {
                 id: user.id,
@@ -391,6 +398,7 @@ function getQdnRoomState(room, player) {
         players: Array.from(room.players.values(), member => ({
             id: member.userId,
             username: member.username,
+            usernameColor: member.usernameColor,
             score: member.score
         })),
         votesSubmitted: room.votes.size,
@@ -520,6 +528,7 @@ io.on("connection", socket => {
             players: new Map([[userId, {
                 userId,
                 username: socket.data.user.username,
+                usernameColor: socket.data.user.username_color,
                 socketId: socket.id,
                 score: 0
             }]]),
@@ -553,6 +562,7 @@ io.on("connection", socket => {
         room.players.set(userId, {
             userId,
             username: socket.data.user.username,
+            usernameColor: socket.data.user.username_color,
             socketId: socket.id,
             score: 0
         });

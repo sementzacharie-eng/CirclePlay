@@ -118,7 +118,16 @@ function setAccountIndicator(user) {
     circlePlayCurrentUser = user;
     const indicator = document.getElementById("account-indicator");
     if (indicator) {
-        indicator.textContent = user ? `Connecté en tant que ${user.username}` : "";
+        indicator.replaceChildren();
+        if (user) {
+            indicator.append("Connecté en tant que ");
+            const username = document.createElement("strong");
+            username.textContent = user.username;
+            if (/^#[0-9a-f]{6}$/i.test(user.usernameColor || "")) {
+                username.style.color = user.usernameColor;
+            }
+            indicator.appendChild(username);
+        }
         indicator.hidden = !user;
     }
     setGlobalChatAccount(user);
@@ -276,21 +285,30 @@ function renderSignedInProfile(profileView, user) {
         <form class="auth-color-form">
             <label for="profile-username-color">Couleur de mon pseudo</label>
             <div class="auth-color-control">
-                <select id="profile-username-color" name="usernameColor" style="color: ${selectedUsernameColor};">
-                    ${circlePlayUsernameColors.map(color => `
-                        <option value="${color.value}" title="${color.name}"
-                            style="color: ${color.value};"${user.usernameColor === color.value ? " selected" : ""}>
-                            ■
-                        </option>
-                    `).join("")}
-                </select>
-                <button class="auth-color-submit" type="submit">Enregistrer la couleur</button>
-            </div>
+            <input id="profile-username-color" name="usernameColor" type="hidden" value="${selectedUsernameColor}">
+            <details class="auth-color-dropdown">
+                <summary aria-label="Choisir une couleur de pseudo">
+                    <span class="auth-color-swatch" style="background-color: ${selectedUsernameColor};"></span>
+                    <span class="auth-color-chevron" aria-hidden="true">▾</span>
+                </summary>
+                <div class="auth-color-options">
+                ${circlePlayUsernameColors.map(color => `
+                    <button class="auth-color-option" type="button" data-username-color="${color.value}"
+                        aria-label="${color.name}" title="${color.name}">
+                        <span style="background-color: ${color.value};"></span>
+                    </button>
+                `).join("")}
+                </div>
+            </details>
+            <button class="auth-color-submit" type="submit">Enregistrer la couleur</button>
+        </div>
             <p class="auth-color-status" role="status" aria-live="polite"></p>
         </form>
         <button class="auth-logout" type="button">Se déconnecter</button>
     `;
     profileView.querySelector(".auth-status strong").textContent = user.username;
+    const profileUsername = profileView.querySelector(".auth-status strong");
+    profileUsername.style.color = user.usernameColor;
     profileView.querySelector(".auth-color-form").addEventListener("submit", async event => {
         event.preventDefault();
         const form = event.currentTarget;
@@ -309,6 +327,7 @@ function renderSignedInProfile(profileView, user) {
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || "La couleur n'a pas pu être enregistrée.");
             setAccountIndicator(result.user);
+            profileUsername.style.color = result.user.usernameColor;
             status.textContent = "Couleur enregistrée.";
         } catch (error) {
             status.textContent = error.message;
@@ -316,6 +335,19 @@ function renderSignedInProfile(profileView, user) {
         } finally {
             submitButton.disabled = false;
         }
+    });
+    const colorForm = profileView.querySelector(".auth-color-form");
+    const colorInput = colorForm.elements.usernameColor;
+    const colorDropdown = colorForm.querySelector(".auth-color-dropdown");
+    const colorSwatch = colorDropdown.querySelector(".auth-color-swatch");
+    colorForm.querySelectorAll("[data-username-color]").forEach(option => {
+        option.addEventListener("click", () => {
+            colorInput.value = option.dataset.usernameColor;
+            colorSwatch.style.backgroundColor = colorInput.value;
+            colorDropdown.open = false;
+            profileUsername.style.color = colorInput.value;
+            setAccountIndicator({ ...circlePlayCurrentUser, usernameColor: colorInput.value });
+        });
     });
     profileView.querySelector(".auth-logout").addEventListener("click", logoutProfile);
     setAccountIndicator(user);
