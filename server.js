@@ -389,10 +389,10 @@ function leaveQdnRoom(socket) {
     if (room.hostId === player.userId) {
         room.hostId = room.players.keys().next().value;
     }
-    room.notice = room.players.size < 3 && room.status !== "lobby" && room.status !== "finished"
-        ? "Il faut au moins 3 joueurs. La partie est revenue au salon."
+    room.notice = room.players.size < 2 && room.status !== "lobby" && room.status !== "finished"
+        ? "Il faut au moins 2 joueurs. La partie est revenue au salon."
         : "";
-    if (room.players.size < 3 && room.status !== "lobby" && room.status !== "finished") {
+    if (room.players.size < 2 && room.status !== "lobby" && room.status !== "finished") {
         room.status = "lobby";
         room.round = 0;
         room.question = null;
@@ -509,7 +509,7 @@ io.on("connection", socket => {
             return reply({ error: "Seul le chef du salon peut lancer la partie." });
         }
         if (room.status !== "lobby") return reply({ error: "La partie a déjà commencé." });
-        if (room.players.size < 3) return reply({ error: "Il faut au moins 3 joueurs pour commencer." });
+        if (room.players.size < 2) return reply({ error: "Il faut au moins 2 joueurs pour commencer." });
 
         for (const player of room.players.values()) player.score = 0;
         room.questionQueue = [];

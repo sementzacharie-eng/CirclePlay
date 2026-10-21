@@ -93,12 +93,12 @@ body {
     margin: 0 auto 1vh;
     padding: 0.55vh 0.9vw;
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.88);
+    color: #fff7fb;
     font-size: clamp(10px, 1.4vh, 13px);
     text-overflow: ellipsis;
     white-space: nowrap;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #30252f;
+    border: 1px solid rgba(255, 155, 207, 0.4);
     border-radius: 999px;
 }
 

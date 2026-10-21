@@ -66,7 +66,7 @@ ils ne sont pas enregistrés dans la base SQLite.
 
 Depuis **Jeux → En Ligne**, connecte-toi puis crée un salon en choisissant la
 difficulté et le nombre de manches (10 à 50), ou rejoins un salon avec son code
-à 6 caractères. Le chef du salon peut lancer la partie à partir de 3 joueurs.
+à 6 caractères. Le chef du salon peut lancer la partie à partir de 2 joueurs.
 Chaque manche affiche la même question à tous ; les votes restent cachés jusqu'à
 ce que tous les joueurs aient voté. Le ou les joueurs ayant reçu le plus de voix
 gagnent les points de la question (les égalités donnent les points à chacun).

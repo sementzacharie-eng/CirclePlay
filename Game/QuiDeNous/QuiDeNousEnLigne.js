@@ -184,12 +184,12 @@ function renderQdnOnlineRoom(state) {
             <p class="qdn-online-hint">Partage ce code avec tes amis · ${state.players.length}/12 joueurs</p>
             <ol class="qdn-online-players">${playerList}</ol>
             <p class="qdn-online-hint">${isHost
-                ? state.players.length < 3
-                    ? "Il faut au moins 3 joueurs pour commencer."
+                ? state.players.length < 2
+                    ? "Il faut au moins 2 joueurs pour commencer."
                     : "Tout le monde est prêt ? Lance la partie !"
                 : "En attente du chef du salon…"
             }</p>
-            ${isHost ? `<button type="button" data-qdn-start${state.players.length < 3 ? " disabled" : ""}>Commencer la partie</button>` : ""}
+            ${isHost ? `<button type="button" data-qdn-start${state.players.length < 2 ? " disabled" : ""}>Commencer la partie</button>` : ""}
         `;
     } else if (state.status === "voting") {
         const voteButtons = state.players.map(player => `
@@ -206,7 +206,7 @@ function renderQdnOnlineRoom(state) {
                 : "Choisis une personne, puis confirme ton vote."
             }</p>
             <div class="qdn-online-vote-grid">${voteButtons}</div>
-            ${state.hasVoted ? "" : '<button type="button" data-qdn-confirm-vote disabled>Confirmer mon choix</button>'}
+            ${state.hasVoted ? "" : `<button type="button" data-qdn-confirm-vote${qdnOnlineSelectedVoteId === null ? " disabled" : ""}>Confirmer mon choix</button>`}
             <p class="qdn-online-votes" aria-live="polite">${state.votesSubmitted} / ${state.players.length} votes reçus</p>
         `;
     } else if (state.status === "reveal") {
