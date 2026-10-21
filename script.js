@@ -6,16 +6,16 @@ let circlePlayVoiceEnabled = true;
 let circlePlayCurrentSpeechText = "";
 let circlePlayCurrentUser = null;
 const circlePlayUsernameColors = [
-    { value: "#ff6b6b", label: "Rouge corail" },
-    { value: "#ff9f43", label: "Orange" },
-    { value: "#feca57", label: "Jaune doré" },
-    { value: "#1dd1a1", label: "Turquoise" },
-    { value: "#48dbfb", label: "Bleu clair" },
-    { value: "#54a0ff", label: "Bleu" },
-    { value: "#5f27cd", label: "Violet" },
-    { value: "#c56cf0", label: "Lavande" },
-    { value: "#ff6bcb", label: "Rose" },
-    { value: "#f5c7d7", label: "Rose poudré" }
+    { value: "#ff6b6b", name: "Rouge corail" },
+    { value: "#ff9f43", name: "Orange" },
+    { value: "#feca57", name: "Jaune doré" },
+    { value: "#1dd1a1", name: "Turquoise" },
+    { value: "#48dbfb", name: "Bleu clair" },
+    { value: "#54a0ff", name: "Bleu" },
+    { value: "#5f27cd", name: "Violet" },
+    { value: "#c56cf0", name: "Lavande" },
+    { value: "#ff6bcb", name: "Rose" },
+    { value: "#f5c7d7", name: "Rose poudré" }
 ];
 
 function isCirclePlaySpeechAvailable() {
@@ -266,6 +266,9 @@ async function refreshAccountIndicator() {
 }
 
 function renderSignedInProfile(profileView, user) {
+    const selectedUsernameColor = circlePlayUsernameColors.some(color => color.value === user.usernameColor)
+        ? user.usernameColor
+        : circlePlayUsernameColors[0].value;
     profileView.innerHTML = `
         <div class="auth-avatar" aria-hidden="true">☺</div>
         <h2>Mon compte</h2>
@@ -273,10 +276,11 @@ function renderSignedInProfile(profileView, user) {
         <form class="auth-color-form">
             <label for="profile-username-color">Couleur de mon pseudo</label>
             <div class="auth-color-control">
-                <select id="profile-username-color" name="usernameColor">
+                <select id="profile-username-color" name="usernameColor" style="color: ${selectedUsernameColor};">
                     ${circlePlayUsernameColors.map(color => `
-                        <option value="${color.value}"${user.usernameColor === color.value ? " selected" : ""}>
-                            ${color.label}
+                        <option value="${color.value}" title="${color.name}"
+                            style="color: ${color.value};"${user.usernameColor === color.value ? " selected" : ""}>
+                            ■
                         </option>
                     `).join("")}
                 </select>

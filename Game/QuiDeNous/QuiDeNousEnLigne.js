@@ -50,6 +50,7 @@ function getQdnOnlineSocket() {
             qdnOnlineSelectedVoteId = null;
             qdnOnlineSelectionRound = null;
             qdnOnlineNotice = "Le chef du salon t'a expulsé.";
+            window.alert("Tu as été expulsé du salon par le chef.");
             renderQdnOnlineHome(qdnOnlineNotice);
         });
     }
@@ -181,7 +182,7 @@ function renderQdnOnlineRoom(state) {
             <strong>${player.score} pts</strong>
             ${isHost && player.id !== currentUserId
                 ? `<button type="button" data-qdn-kick="${player.id}">Expulser</button>`
-                : ""}
+                : '<span class="qdn-online-kick-placeholder" aria-hidden="true"></span>'}
         </li>
     `).join("");
     let body = "";
