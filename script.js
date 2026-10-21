@@ -124,6 +124,10 @@ function appendChatMessage(message) {
 
     const username = document.createElement("strong");
     username.textContent = message.username;
+    if (/^#[0-9a-f]{6}$/i.test(message.usernameColor || "")) {
+        username.style.color = message.usernameColor;
+    }
+    if (Number.isInteger(message.userId)) item.dataset.userId = String(message.userId);
     heading.appendChild(username);
 
     const time = document.createElement("time");
@@ -205,6 +209,12 @@ function setGlobalChatAccount(user) {
         history.forEach(appendChatMessage);
     });
     socket.on("chat:message", appendChatMessage);
+    socket.on("chat:profile", profile => {
+        if (!profile || !Number.isInteger(profile.userId) ||
+            !/^#[0-9a-f]{6}$/i.test(profile.usernameColor || "")) return;
+        document.querySelectorAll(`.chat-message[data-user-id="${profile.userId}"] strong`)
+            .forEach(username => { username.style.color = profile.usernameColor; });
+    });
     socket.on("chat:presence", count => {
         presence.textContent = `${count} ${count === 1 ? "personne en ligne" : "personnes en ligne"}`;
     });
@@ -248,9 +258,44 @@ function renderSignedInProfile(profileView, user) {
         <div class="auth-avatar" aria-hidden="true">☺</div>
         <h2>Mon compte</h2>
         <p class="auth-status">Connecté en tant que <strong></strong>.</p>
+        <form class="auth-color-form">
+            <label for="profile-username-color">Couleur de mon pseudo</label>
+            <div class="auth-color-control">
+                <input id="profile-username-color" name="usernameColor" type="color"
+                    value="${/^#[0-9a-f]{6}$/i.test(user.usernameColor || "") ? user.usernameColor : "#f5c7d7"}">
+                <button class="auth-color-submit" type="submit">Enregistrer la couleur</button>
+            </div>
+            <p class="auth-color-status" role="status" aria-live="polite"></p>
+        </form>
         <button class="auth-logout" type="button">Se déconnecter</button>
     `;
     profileView.querySelector(".auth-status strong").textContent = user.username;
+    profileView.querySelector(".auth-color-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const colorInput = form.elements.usernameColor;
+        const submitButton = form.querySelector('button[type="submit"]');
+        const status = form.querySelector(".auth-color-status");
+        submitButton.disabled = true;
+        status.textContent = "Enregistrement...";
+        status.classList.remove("auth-error");
+        try {
+            const response = await fetch("/api/profile/color", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ color: colorInput.value })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "La couleur n'a pas pu être enregistrée.");
+            setAccountIndicator(result.user);
+            status.textContent = "Couleur enregistrée.";
+        } catch (error) {
+            status.textContent = error.message;
+            status.classList.add("auth-error");
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
     profileView.querySelector(".auth-logout").addEventListener("click", logoutProfile);
     setAccountIndicator(user);
 }

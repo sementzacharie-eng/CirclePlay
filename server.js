@@ -39,9 +39,14 @@ database.exec(`
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL COLLATE NOCASE UNIQUE,
         password_hash TEXT NOT NULL,
+        username_color TEXT NOT NULL DEFAULT '#f5c7d7',
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
 `);
+const userColumns = database.prepare("PRAGMA table_info(users)").all();
+if (!userColumns.some(column => column.name === "username_color")) {
+    database.exec("ALTER TABLE users ADD COLUMN username_color TEXT NOT NULL DEFAULT '#f5c7d7'");
+}
 
 class SqliteSessionStore extends session.Store {
     constructor(db) {
@@ -118,10 +123,13 @@ class SqliteSessionStore extends session.Store {
 }
 
 const findUserByUsername = database.prepare(
-    "SELECT id, username, password_hash FROM users WHERE username = ? COLLATE NOCASE"
+    "SELECT id, username, password_hash, username_color FROM users WHERE username = ? COLLATE NOCASE"
 );
 const findUserById = database.prepare(
-    "SELECT id, username FROM users WHERE id = ?"
+    "SELECT id, username, username_color FROM users WHERE id = ?"
+);
+const updateUsernameColor = database.prepare(
+    "UPDATE users SET username_color = ? WHERE id = ?"
 );
 const createUser = database.prepare(
     "INSERT INTO users (username, password_hash) VALUES (?, ?)"
@@ -185,7 +193,11 @@ app.get("/api/auth/me", (req, res, next) => {
         const user = req.session.userId
             ? findUserById.get(req.session.userId)
             : null;
-        res.json({ user: user ? { id: user.id, username: user.username } : null });
+        res.json({
+            user: user
+                ? { id: user.id, username: user.username, usernameColor: user.username_color }
+                : null
+        });
     } catch (error) {
         next(error);
     }
@@ -204,7 +216,13 @@ app.post("/api/auth/register", authRateLimit, async (req, res, next) => {
         await regenerateSession(req);
         req.session.userId = Number(result.lastInsertRowid);
         await saveSession(req);
-        res.status(201).json({ user: { id: Number(result.lastInsertRowid), username } });
+        res.status(201).json({
+            user: {
+                id: Number(result.lastInsertRowid),
+                username,
+                usernameColor: "#f5c7d7"
+            }
+        });
     } catch (error) {
         if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
             return res.status(409).json({ error: "Ce pseudo est déjà utilisé." });
@@ -231,7 +249,44 @@ app.post("/api/auth/login", authRateLimit, async (req, res, next) => {
         await regenerateSession(req);
         req.session.userId = user.id;
         await saveSession(req);
-        res.json({ user: { id: user.id, username: user.username } });
+        res.json({
+            user: {
+                id: user.id,
+                username: user.username,
+                usernameColor: user.username_color
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.post("/api/profile/color", (req, res, next) => {
+    const { color } = req.body || {};
+    if (typeof color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+        return res.status(400).json({ error: "Choisis une couleur valide." });
+    }
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "Connecte-toi pour modifier ton profil." });
+    }
+
+    try {
+        updateUsernameColor.run(color.toLowerCase(), req.session.userId);
+        const user = findUserById.get(req.session.userId);
+        io.emit("chat:profile", {
+            userId: user.id,
+            usernameColor: user.username_color
+        });
+        for (const message of chatHistory) {
+            if (message.userId === user.id) message.usernameColor = user.username_color;
+        }
+        res.json({
+            user: {
+                id: user.id,
+                username: user.username,
+                usernameColor: user.username_color
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -501,6 +556,41 @@ io.on("connection", socket => {
         reply({ ok: true });
     });
 
+    socket.on("qdn:kick", (targetId, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = qdnRooms.get(socket.data.qdnRoomCode);
+        if (!room) return reply({ error: "Tu n'es dans aucun salon." });
+        if (room.hostId !== socket.data.user.id) {
+            return reply({ error: "Seul le chef du salon peut expulser un joueur." });
+        }
+        if (!Number.isInteger(targetId) || targetId === socket.data.user.id) {
+            return reply({ error: "Choisis un autre joueur à expulser." });
+        }
+        const target = room.players.get(targetId);
+        if (!target) return reply({ error: "Ce joueur n'est plus dans le salon." });
+
+        const targetSocket = io.sockets.sockets.get(target.socketId);
+        if (targetSocket) {
+            targetSocket.emit("qdn:kicked");
+            leaveQdnRoom(targetSocket);
+        } else {
+            room.players.delete(targetId);
+            room.votes.delete(targetId);
+            if (room.players.size < 2 && room.status !== "lobby" && room.status !== "finished") {
+                room.status = "lobby";
+                room.round = 0;
+                room.question = null;
+                room.reveal = null;
+                room.votes.clear();
+                room.notice = "Il faut au moins 2 joueurs. La partie est revenue au salon.";
+            } else {
+                completeQdnVoting(room);
+            }
+            broadcastQdnRoom(room);
+        }
+        reply({ ok: true });
+    });
+
     socket.on("qdn:start", (_payload, acknowledge) => {
         const reply = typeof acknowledge === "function" ? acknowledge : () => {};
         const room = qdnRooms.get(socket.data.qdnRoomCode);
@@ -596,7 +686,9 @@ io.on("connection", socket => {
 
         lastMessageByUser.set(socket.data.user.id, now);
         const chatMessage = {
+            userId: socket.data.user.id,
             username: socket.data.user.username,
+            usernameColor: findUserById.get(socket.data.user.id).username_color,
             text,
             sentAt: new Date(now).toISOString()
         };

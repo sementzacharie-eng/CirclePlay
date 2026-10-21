@@ -45,6 +45,13 @@ function getQdnOnlineSocket() {
                 renderQdnOnlineHome(qdnOnlineNotice);
             }
         });
+        socket.on("qdn:kicked", () => {
+            qdnOnlineRoomState = null;
+            qdnOnlineSelectedVoteId = null;
+            qdnOnlineSelectionRound = null;
+            qdnOnlineNotice = "Le chef du salon t'a expulsé.";
+            renderQdnOnlineHome(qdnOnlineNotice);
+        });
     }
     if (!socket.connected) {
         throw new Error("Connexion au serveur en cours. Réessaie dans un instant.");
@@ -174,6 +181,14 @@ function renderQdnOnlineRoom(state) {
             <strong>${player.score} pts</strong>
         </li>
     `).join("");
+    const managementList = state.players.map(player => `
+        <li>
+            <span>${escapeQdnOnlineHtml(player.username)}${player.id === state.hostId ? " <em>Chef</em>" : ""}</span>
+            ${isHost && player.id !== currentUserId
+                ? `<button type="button" data-qdn-kick="${player.id}">Expulser</button>`
+                : ""}
+        </li>
+    `).join("");
     let body = "";
 
     if (state.status === "lobby") {
@@ -253,6 +268,10 @@ function renderQdnOnlineRoom(state) {
         <section class="qdn-online-view">
             <h2>Salon ${escapeQdnOnlineHtml(state.code)}</h2>
             ${body}
+            <details class="qdn-online-manage">
+                <summary>Joueurs${isHost ? " · gérer le salon" : ""}</summary>
+                <ol class="qdn-online-players">${managementList}</ol>
+            </details>
             <p class="qdn-online-status${qdnOnlineNotice ? " is-error" : ""}" role="${qdnOnlineNotice ? "alert" : "status"}">${escapeQdnOnlineHtml(qdnOnlineNotice)}</p>
             <button class="btn-retour" type="button" data-qdn-leave>Quitter le salon</button>
         </section>
@@ -269,6 +288,13 @@ function renderQdnOnlineRoom(state) {
     });
     document.querySelector("[data-qdn-start]")?.addEventListener("click", () => runQdnOnlineAction("qdn:start"));
     document.querySelector("[data-qdn-next]")?.addEventListener("click", () => runQdnOnlineAction("qdn:next"));
+    document.querySelectorAll("[data-qdn-kick]").forEach(button => {
+        button.addEventListener("click", () => {
+            if (window.confirm(`Expulser ${button.parentElement.querySelector("span").textContent.trim()} du salon ?`)) {
+                runQdnOnlineAction("qdn:kick", Number(button.dataset.qdnKick));
+            }
+        });
+    });
     document.querySelectorAll("[data-qdn-vote]").forEach(button => {
         button.addEventListener("click", () => {
             if (qdnOnlineRoomState?.hasVoted) return;

@@ -52,7 +52,9 @@ npm start
 Depuis **Profil**, chacun peut créer un compte avec un pseudo de 3 à 20 lettres,
 chiffres ou tirets bas et un mot de passe d'au moins 10 caractères. Les mots de
 passe sont hachés avant stockage ; les comptes et les sessions sont conservés
-dans le dossier local `data/`, qui n'est pas servi au navigateur.
+dans le dossier local `data/`, qui n'est pas servi au navigateur. La couleur du
+pseudo peut aussi être choisie dans le profil ; elle s'affiche dans le chat
+global.
 
 ## Chat global
 
@@ -66,7 +68,8 @@ ils ne sont pas enregistrés dans la base SQLite.
 
 Depuis **Jeux → En Ligne**, connecte-toi puis crée un salon en choisissant la
 difficulté et le nombre de manches (10 à 50), ou rejoins un salon avec son code
-à 6 caractères. Le chef du salon peut lancer la partie à partir de 2 joueurs.
+à 6 caractères. Le chef du salon peut lancer la partie à partir de 2 joueurs et
+expulser un joueur depuis la liste du salon.
 Chaque manche affiche la même question à tous ; les votes restent cachés jusqu'à
 ce que tous les joueurs aient voté. Le ou les joueurs ayant reçu le plus de voix
 gagnent les points de la question (les égalités donnent les points à chacun).
