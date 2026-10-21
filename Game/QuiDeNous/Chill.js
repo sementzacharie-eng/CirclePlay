@@ -1,4 +1,5 @@
-window.chillQuiDeNousData = {
+(function () {
+const data = {
     questions: [
         { text: "Est le plus gourmand ?", points: -1 },
         { text: "Rit le plus facilement ?", points: 2 },
@@ -102,3 +103,6 @@ window.chillQuiDeNousData = {
         { text: "Serait le plus doué pour inventer un nouveau parfum de glace ?", points: 2 }
     ]
 };
+if (typeof window !== "undefined") window.chillQuiDeNousData = data;
+if (typeof module !== "undefined") module.exports = data;
+})();

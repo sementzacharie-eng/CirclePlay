@@ -1,4 +1,5 @@
-window.softQuiDeNousData = {
+(function () {
+const data = {
     questions: [
         { text: "Est le plus charmeur ?", points: 2 },
         { text: "Ferait le premier pas pour rencontrer quelqu'un ?", points: 2 },
@@ -12,3 +13,6 @@ window.softQuiDeNousData = {
         { text: "Ferait la meilleure déclaration ?", points: 2 }
     ]
 };
+if (typeof window !== "undefined") window.softQuiDeNousData = data;
+if (typeof module !== "undefined") module.exports = data;
+})();

@@ -4,6 +4,7 @@
 
 let circlePlayVoiceEnabled = true;
 let circlePlayCurrentSpeechText = "";
+let circlePlayCurrentUser = null;
 
 function isCirclePlaySpeechAvailable() {
     return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
@@ -102,6 +103,7 @@ function showMainMenu() {
 }
 
 function setAccountIndicator(user) {
+    circlePlayCurrentUser = user;
     const indicator = document.getElementById("account-indicator");
     if (indicator) {
         indicator.textContent = user ? `Connecté en tant que ${user.username}` : "";
@@ -241,16 +243,16 @@ async function refreshAccountIndicator() {
     }
 }
 
-function renderSignedInProfile(profileView, username) {
+function renderSignedInProfile(profileView, user) {
     profileView.innerHTML = `
         <div class="auth-avatar" aria-hidden="true">☺</div>
         <h2>Mon compte</h2>
         <p class="auth-status">Connecté en tant que <strong></strong>.</p>
         <button class="auth-logout" type="button">Se déconnecter</button>
     `;
-    profileView.querySelector(".auth-status strong").textContent = username;
+    profileView.querySelector(".auth-status strong").textContent = user.username;
     profileView.querySelector(".auth-logout").addEventListener("click", logoutProfile);
-    setAccountIndicator({ username });
+    setAccountIndicator(user);
 }
 
 /* ----------------------------- */
@@ -280,7 +282,7 @@ async function loadProfile(mode) {
         if (!profileView.isConnected) return;
 
         if (user) {
-            renderSignedInProfile(profileView, user.username);
+            renderSignedInProfile(profileView, user);
         } else {
             setAccountIndicator(null);
             renderProfileForm(profileView, mode);
@@ -341,7 +343,7 @@ function renderProfileForm(profileView, mode, message = "") {
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || "La connexion a échoué.");
             if (!profileView.isConnected) return;
-            renderSignedInProfile(profileView, result.user.username);
+            renderSignedInProfile(profileView, result.user);
         } catch (error) {
             if (!profileView.isConnected) return;
             status.textContent = error.message;
@@ -404,7 +406,7 @@ function WanMenuGames() {
     fadeMenuContent(`
         <h2>Choisissez votre jeux</h2>
         <button>Action/Vérité ❓</button>
-        <button>Qui de nous ? 👥</button>
+        <button onclick="QuiDeNousEnLigne()">Qui de nous ? 👥</button>
         <button>Médias Roulette 🎰</button>
         <button class="btn-retour" onclick="menuDevice()">← Retour</button>
     `);

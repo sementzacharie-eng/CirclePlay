@@ -1,4 +1,5 @@
-window.extremeQuiDeNousData = {
+(function () {
+const data = {
     questions: [
         { text: "Survivrait le plus longtemps sur une île déserte ?", points: 2 },
         { text: "Deviendrait célèbre du jour au lendemain ?", points: 2 },
@@ -12,3 +13,6 @@ window.extremeQuiDeNousData = {
         { text: "Ferait le meilleur chef d'une équipe en mission secrète ?", points: 2 }
     ]
 };
+if (typeof window !== "undefined") window.extremeQuiDeNousData = data;
+if (typeof module !== "undefined") module.exports = data;
+})();

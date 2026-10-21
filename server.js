@@ -12,6 +12,15 @@ const { rateLimit } = require("express-rate-limit");
 const helmet = require("helmet");
 const { Server } = require("socket.io");
 
+const qdnQuestions = {
+    CHILL: require("./Game/QuiDeNous/Chill").questions,
+    SOFT: require("./Game/QuiDeNous/Soft").questions,
+    HARD: require("./Game/QuiDeNous/Hard").questions,
+    EXTREME: require("./Game/QuiDeNous/Extreme").questions
+};
+const qdnRoundChoices = [10, 20, 30, 40, 50];
+const qdnRoomCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === "production";
@@ -266,6 +275,7 @@ const chatHistory = [];
 const lastMessageByUser = new Map();
 const maxChatHistory = 50;
 const maxMessageLength = 500;
+const qdnRooms = new Map();
 
 io.engine.use(sessionMiddleware);
 io.use((socket, next) => {
@@ -278,9 +288,289 @@ io.use((socket, next) => {
     next();
 });
 
+function shuffleQuestions(questions) {
+    const shuffled = [...questions];
+    for (let index = shuffled.length - 1; index > 0; index--) {
+        const randomIndex = crypto.randomInt(index + 1);
+        [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+    }
+    return shuffled;
+}
+
+function getNextQdnQuestion(room) {
+    if (room.questionQueue.length === 0) {
+        room.questionQueue = shuffleQuestions(qdnQuestions[room.difficulty]);
+        if (room.questionQueue.length > 1 &&
+            room.questionQueue[room.questionQueue.length - 1].text === room.lastQuestion) {
+            [room.questionQueue[0], room.questionQueue[room.questionQueue.length - 1]] =
+                [room.questionQueue[room.questionQueue.length - 1], room.questionQueue[0]];
+        }
+    }
+    const question = room.questionQueue.pop();
+    room.lastQuestion = question.text;
+    return question;
+}
+
+function getQdnRoomState(room, player) {
+    const state = {
+        code: room.code,
+        hostId: room.hostId,
+        difficulty: room.difficulty,
+        rounds: room.rounds,
+        status: room.status,
+        round: room.round,
+        question: room.question,
+        players: Array.from(room.players.values(), member => ({
+            id: member.userId,
+            username: member.username,
+            score: member.score
+        })),
+        votesSubmitted: room.votes.size,
+        hasVoted: room.votes.has(player.userId),
+        notice: room.notice,
+        reveal: room.reveal
+    };
+    return state;
+}
+
+function broadcastQdnRoom(room) {
+    for (const player of room.players.values()) {
+        io.to(player.socketId).emit("qdn:state", getQdnRoomState(room, player));
+    }
+}
+
+function completeQdnVoting(room) {
+    if (room.status !== "voting" || room.votes.size !== room.players.size) return;
+
+    const votesByPlayer = new Map();
+    for (const targetId of room.votes.values()) {
+        votesByPlayer.set(targetId, (votesByPlayer.get(targetId) || 0) + 1);
+    }
+    const highestVoteCount = Math.max(...votesByPlayer.values());
+    const awardedIds = Array.from(votesByPlayer.entries())
+        .filter(([, voteCount]) => voteCount === highestVoteCount)
+        .map(([playerId]) => playerId);
+    for (const playerId of awardedIds) {
+        const player = room.players.get(playerId);
+        if (player) player.score += room.question.points;
+    }
+
+    room.reveal = {
+        results: Array.from(room.players.values(), player => ({
+            playerId: player.userId,
+            username: player.username,
+            votes: votesByPlayer.get(player.userId) || 0
+        })).sort((first, second) => second.votes - first.votes),
+        awardedIds,
+        points: room.question.points
+    };
+    room.status = "reveal";
+    broadcastQdnRoom(room);
+}
+
+function leaveQdnRoom(socket) {
+    const roomCode = socket.data.qdnRoomCode;
+    if (!roomCode) return;
+
+    socket.data.qdnRoomCode = null;
+    const room = qdnRooms.get(roomCode);
+    if (!room) return;
+
+    const player = room.players.get(socket.data.user.id);
+    if (!player || player.socketId !== socket.id) return;
+    room.players.delete(player.userId);
+    room.votes.delete(player.userId);
+    socket.leave(roomCode);
+
+    if (room.players.size === 0) {
+        qdnRooms.delete(roomCode);
+        return;
+    }
+    if (room.hostId === player.userId) {
+        room.hostId = room.players.keys().next().value;
+    }
+    room.notice = room.players.size < 3 && room.status !== "lobby" && room.status !== "finished"
+        ? "Il faut au moins 3 joueurs. La partie est revenue au salon."
+        : "";
+    if (room.players.size < 3 && room.status !== "lobby" && room.status !== "finished") {
+        room.status = "lobby";
+        room.round = 0;
+        room.question = null;
+        room.reveal = null;
+        room.votes.clear();
+    } else {
+        completeQdnVoting(room);
+    }
+    broadcastQdnRoom(room);
+}
+
+function findQdnRoomForUser(userId) {
+    return Array.from(qdnRooms.values()).find(room => room.players.has(userId));
+}
+
+function generateQdnRoomCode() {
+    let code;
+    do {
+        code = Array.from({ length: 6 }, () =>
+            qdnRoomCodeCharacters[crypto.randomInt(qdnRoomCodeCharacters.length)]
+        ).join("");
+    } while (qdnRooms.has(code));
+    return code;
+}
+
 io.on("connection", socket => {
     socket.emit("chat:history", chatHistory);
     io.emit("chat:presence", io.of("/").sockets.size);
+
+    socket.on("qdn:create", (settings, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const userId = socket.data.user.id;
+        if (findQdnRoomForUser(userId)) {
+            return reply({ error: "Tu es déjà dans un salon." });
+        }
+        if (qdnRooms.size >= 500) {
+            return reply({ error: "Trop de salons sont actuellement ouverts. Réessaie plus tard." });
+        }
+        if (!settings || !Object.hasOwn(qdnQuestions, settings.difficulty)) {
+            return reply({ error: "Choisis une difficulté valide." });
+        }
+        if (!qdnRoundChoices.includes(settings.rounds)) {
+            return reply({ error: "Choisis un nombre de manches valide." });
+        }
+
+        const code = generateQdnRoomCode();
+        const room = {
+            code,
+            hostId: userId,
+            difficulty: settings.difficulty,
+            rounds: settings.rounds,
+            status: "lobby",
+            round: 0,
+            question: null,
+            questionQueue: [],
+            lastQuestion: "",
+            players: new Map([[userId, {
+                userId,
+                username: socket.data.user.username,
+                socketId: socket.id,
+                score: 0
+            }]]),
+            votes: new Map(),
+            reveal: null,
+            notice: ""
+        };
+        qdnRooms.set(code, room);
+        socket.data.qdnRoomCode = code;
+        socket.join(code);
+        reply({ ok: true, code });
+        broadcastQdnRoom(room);
+    });
+
+    socket.on("qdn:join", (inputCode, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const code = typeof inputCode === "string" ? inputCode.trim().toUpperCase() : "";
+        if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
+            return reply({ error: "Le code du salon doit contenir 6 caractères valides." });
+        }
+        if (findQdnRoomForUser(socket.data.user.id)) {
+            return reply({ error: "Tu es déjà dans un salon." });
+        }
+
+        const room = qdnRooms.get(code);
+        if (!room) return reply({ error: "Aucun salon ne correspond à ce code." });
+        if (room.status !== "lobby") return reply({ error: "La partie a déjà commencé." });
+        if (room.players.size >= 12) return reply({ error: "Ce salon est complet (12 joueurs maximum)." });
+
+        const userId = socket.data.user.id;
+        room.players.set(userId, {
+            userId,
+            username: socket.data.user.username,
+            socketId: socket.id,
+            score: 0
+        });
+        room.notice = "";
+        socket.data.qdnRoomCode = code;
+        socket.join(code);
+        reply({ ok: true, code });
+        broadcastQdnRoom(room);
+    });
+
+    socket.on("qdn:leave", (_payload, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        leaveQdnRoom(socket);
+        reply({ ok: true });
+    });
+
+    socket.on("qdn:start", (_payload, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = qdnRooms.get(socket.data.qdnRoomCode);
+        if (!room) return reply({ error: "Tu n'es dans aucun salon." });
+        if (room.hostId !== socket.data.user.id) {
+            return reply({ error: "Seul le chef du salon peut lancer la partie." });
+        }
+        if (room.status !== "lobby") return reply({ error: "La partie a déjà commencé." });
+        if (room.players.size < 3) return reply({ error: "Il faut au moins 3 joueurs pour commencer." });
+
+        for (const player of room.players.values()) player.score = 0;
+        room.questionQueue = [];
+        room.lastQuestion = "";
+        room.round = 1;
+        room.question = getNextQdnQuestion(room);
+        room.votes.clear();
+        room.reveal = null;
+        room.notice = "";
+        room.status = "voting";
+        reply({ ok: true });
+        broadcastQdnRoom(room);
+    });
+
+    socket.on("qdn:vote", (targetId, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = qdnRooms.get(socket.data.qdnRoomCode);
+        if (!room || room.status !== "voting") {
+            return reply({ error: "Aucun vote n'est attendu pour le moment." });
+        }
+        const voter = room.players.get(socket.data.user.id);
+        if (!voter || voter.socketId !== socket.id) {
+            return reply({ error: "Tu ne fais pas partie de ce salon." });
+        }
+        if (room.votes.has(voter.userId)) {
+            return reply({ error: "Tu as déjà voté pour cette manche." });
+        }
+        if (!Number.isInteger(targetId) || !room.players.has(targetId)) {
+            return reply({ error: "Choisis un joueur présent dans le salon." });
+        }
+
+        room.votes.set(voter.userId, targetId);
+        completeQdnVoting(room);
+        if (room.status === "voting") broadcastQdnRoom(room);
+        reply({ ok: true });
+    });
+
+    socket.on("qdn:next", (_payload, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = qdnRooms.get(socket.data.qdnRoomCode);
+        if (!room) return reply({ error: "Tu n'es dans aucun salon." });
+        if (room.hostId !== socket.data.user.id) {
+            return reply({ error: "Seul le chef du salon peut continuer." });
+        }
+        if (room.status !== "reveal") {
+            return reply({ error: "Attends la révélation des votes." });
+        }
+        if (room.round >= room.rounds) {
+            room.status = "finished";
+            room.notice = "";
+        } else {
+            room.round++;
+            room.question = getNextQdnQuestion(room);
+            room.votes.clear();
+            room.reveal = null;
+            room.status = "voting";
+            room.notice = "";
+        }
+        reply({ ok: true });
+        broadcastQdnRoom(room);
+    });
 
     socket.on("chat:send", (message, acknowledge) => {
         const reply = typeof acknowledge === "function" ? acknowledge : () => {};
@@ -318,6 +608,7 @@ io.on("connection", socket => {
     });
 
     socket.on("disconnect", () => {
+        leaveQdnRoom(socket);
         io.emit("chat:presence", io.of("/").sockets.size);
     });
 });

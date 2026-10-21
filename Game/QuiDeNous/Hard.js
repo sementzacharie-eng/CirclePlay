@@ -1,4 +1,5 @@
-window.hardQuiDeNousData = {
+(function () {
+const data = {
     questions: [
         { text: "Est le plus têtu ?", points: -1 },
         { text: "Veut toujours avoir le dernier mot ?", points: -1 },
@@ -12,3 +13,6 @@ window.hardQuiDeNousData = {
         { text: "Lance le plus facilement un débat animé ?", points: -1 }
     ]
 };
+if (typeof window !== "undefined") window.hardQuiDeNousData = data;
+if (typeof module !== "undefined") module.exports = data;
+})();
