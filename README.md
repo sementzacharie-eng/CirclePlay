@@ -76,6 +76,26 @@ gagnent les points de la question (les égalités donnent les points à chacun).
 Les salons et les scores sont conservés en mémoire du serveur et disparaissent
 à son redémarrage.
 
+## Undercover en ligne
+
+Depuis **Jeux → En Ligne → Undercover**, connecte-toi puis crée un salon avec
+une catégorie et un nombre de manches, ou rejoins un salon avec son code à 6
+caractères. Le chef peut lancer la partie à partir de 3 joueurs. À chaque
+manche, un joueur reçoit un mot différent de celui des autres ; les mots ne
+sont révélés qu'à la fin du vote. Les joueurs ont 3 minutes pour désigner
+l'undercover ; celui-ci ne peut pas voter. Le vote se termine plus tôt si tous
+les joueurs autorisés ont voté. Le chef lance ensuite la manche suivante.
+
+Les paires de mots sont personnalisables dans
+[`data/undercover-categories.js`](./data/undercover-categories.js). Ajoute ou
+modifie les catégories et les paires `{ normal, undercover }` dans ce fichier ;
+les deux mots d'une paire doivent être différents et chaque catégorie doit
+contenir au moins une paire. Redémarre le serveur pour charger les changements.
+Une équipe normale gagne un point par joueur si
+l'undercover reçoit seul le plus de votes ; sinon l'undercover gagne un point.
+Les salons et les scores sont conservés en mémoire du serveur et disparaissent
+à son redémarrage.
+
 Pour un hébergement public, configure `NODE_ENV=production`, une
 `SESSION_SECRET` aléatoire et HTTPS ; ne réutilise pas la clé d'exemple. En
 développement, une clé temporaire est générée si `SESSION_SECRET` n'est pas

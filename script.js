@@ -490,7 +490,7 @@ function menuDevice() {
 function menuGames() {
     fadeMenuContent(`
         <h2>Choisissez votre jeux</h2>
-        <button onclick="ActionVerity()">Action/Vérité ❓</button>
+        <button onclick="UndercoverEnLigne()">Undercover 🕵️</button>
         <button onclick="QuiDeNous()">Qui de nous ? 👥</button>
         <button onclick="TestDePurete()">Test de Pureté ⚖️</button>
         <button class="btn-retour" onclick="menuDevice()">← Retour</button>
@@ -503,7 +503,7 @@ function menuGames() {
 function WanMenuGames() {
     fadeMenuContent(`
         <h2>Choisissez votre jeux</h2>
-        <button>Action/Vérité ❓</button>
+        <button onclick="UndercoverEnLigne()">Undercover 🕵️</button>
         <button onclick="QuiDeNousEnLigne()">Qui de nous ? 👥</button>
         <button>Médias Roulette 🎰</button>
         <button class="btn-retour" onclick="menuDevice()">← Retour</button>

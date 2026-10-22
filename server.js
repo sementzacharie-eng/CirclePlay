@@ -18,8 +18,18 @@ const qdnQuestions = {
     HARD: require("./Game/QuiDeNous/Hard").questions,
     EXTREME: require("./Game/QuiDeNous/Extreme").questions
 };
+const undercoverCategories = require("./data/undercover-categories");
 const qdnRoundChoices = [10, 20, 30, 40, 50];
 const qdnRoomCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const undercoverVoteDurationMs = 3 * 60 * 1000;
+for (const [category, pairs] of Object.entries(undercoverCategories)) {
+    if (!category.trim() || !Array.isArray(pairs) || pairs.length === 0 ||
+        pairs.some(pair => !pair || typeof pair.normal !== "string" ||
+            !pair.normal.trim() || typeof pair.undercover !== "string" ||
+            !pair.undercover.trim() || pair.normal.trim() === pair.undercover.trim())) {
+        throw new Error(`Catégorie Undercover invalide : ${category || "(sans nom)"}.`);
+    }
+}
 const usernameColors = [
     "#ff6b6b",
     "#ff9f43",
@@ -328,6 +338,13 @@ app.post("/api/auth/logout", (req, res, next) => {
     });
 });
 
+app.get("/api/undercover/categories", (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "Connecte-toi pour voir les catégories." });
+    }
+    res.json({ categories: Object.keys(undercoverCategories) });
+});
+
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.use("/Game", express.static(path.join(__dirname, "Game")));
 app.use("/img", express.static(path.join(__dirname, "img")));
@@ -351,6 +368,7 @@ const lastMessageByUser = new Map();
 const maxChatHistory = 50;
 const maxMessageLength = 500;
 const qdnRooms = new Map();
+const undercoverRooms = new Map();
 
 io.engine.use(sessionMiddleware);
 io.use((socket, next) => {
@@ -490,18 +508,400 @@ function generateQdnRoomCode() {
         code = Array.from({ length: 6 }, () =>
             qdnRoomCodeCharacters[crypto.randomInt(qdnRoomCodeCharacters.length)]
         ).join("");
-    } while (qdnRooms.has(code));
+    } while (qdnRooms.has(code) || undercoverRooms.has(code));
     return code;
+}
+
+function findUndercoverRoomForUser(userId) {
+    return Array.from(undercoverRooms.values()).find(room => room.players.has(userId));
+}
+
+function clearUndercoverTimer(room) {
+    if (room.timer) clearTimeout(room.timer);
+    room.timer = null;
+}
+
+function getUndercoverRoomState(room, player) {
+    return {
+        code: room.code,
+        hostId: room.hostId,
+        category: room.category,
+        rounds: room.rounds,
+        status: room.status,
+        round: room.round,
+        endsAt: room.endsAt,
+        remainingSeconds: room.status === "voting"
+            ? Math.max(0, Math.ceil((room.endsAt - Date.now()) / 1000))
+            : 0,
+        players: Array.from(room.players.values(), member => ({
+            id: member.userId,
+            username: member.username,
+            usernameColor: member.usernameColor,
+            score: member.score
+        })),
+        votesSubmitted: room.votes.size,
+        eligibleVoters: Array.from(room.players.values()).filter(member => !member.isUndercover).length,
+        hasVoted: room.votes.has(player.userId),
+        isUndercover: Boolean(player.isUndercover),
+        word: room.status === "lobby" ? "" : player.word,
+        reveal: room.reveal,
+        notice: room.notice
+    };
+}
+
+function broadcastUndercoverRoom(room) {
+    for (const player of room.players.values()) {
+        io.to(player.socketId).emit(
+            "undercover:state",
+            getUndercoverRoomState(room, player)
+        );
+    }
+}
+
+function revealUndercoverRound(room) {
+    if (room.status !== "voting") return;
+    clearUndercoverTimer(room);
+
+    const undercover = Array.from(room.players.values()).find(player => player.isUndercover);
+    if (!undercover) {
+        room.status = "lobby";
+        room.round = 0;
+        room.notice = "La manche a été annulée : undercover introuvable. Relance la partie.";
+        broadcastUndercoverRoom(room);
+        return;
+    }
+    const votesByPlayer = new Map();
+    for (const targetId of room.votes.values()) {
+        votesByPlayer.set(targetId, (votesByPlayer.get(targetId) || 0) + 1);
+    }
+    const highestVotes = Math.max(0, ...votesByPlayer.values());
+    const leaders = Array.from(votesByPlayer.entries())
+        .filter(([, count]) => count === highestVotes)
+        .map(([playerId]) => playerId);
+    const undercoverFound = highestVotes > 0 &&
+        leaders.length === 1 &&
+        leaders[0] === undercover.userId;
+
+    if (undercoverFound) {
+        for (const player of room.players.values()) {
+            if (!player.isUndercover) player.score++;
+        }
+    } else {
+        undercover.score++;
+    }
+
+    room.reveal = {
+        undercoverId: undercover.userId,
+        undercoverUsername: undercover.username,
+        undercoverWord: undercover.word,
+        normalWord: room.normalWord,
+        votes: Array.from(room.players.values(), player => ({
+            playerId: player.userId,
+            username: player.username,
+            count: votesByPlayer.get(player.userId) || 0
+        })).sort((first, second) => second.count - first.count),
+        undercoverFound,
+        votesSubmitted: room.votes.size
+    };
+    room.status = "reveal";
+    room.endsAt = null;
+    broadcastUndercoverRoom(room);
+}
+
+function completeUndercoverVoting(room) {
+    if (room.status !== "voting") return;
+    const eligibleVoters = Array.from(room.players.values())
+        .filter(player => !player.isUndercover);
+    if (eligibleVoters.every(player => room.votes.has(player.userId))) {
+        revealUndercoverRound(room);
+    } else {
+        broadcastUndercoverRoom(room);
+    }
+}
+
+function startUndercoverRound(room) {
+    const wordPairs = undercoverCategories[room.category];
+    const pair = wordPairs[crypto.randomInt(wordPairs.length)];
+    const undercoverIndex = crypto.randomInt(room.players.size);
+    const players = Array.from(room.players.values());
+    room.normalWord = pair.normal;
+    room.undercoverWord = pair.undercover;
+    room.votes.clear();
+    room.reveal = null;
+    room.notice = "";
+    room.status = "voting";
+    room.endsAt = Date.now() + undercoverVoteDurationMs;
+    players.forEach((player, index) => {
+        player.isUndercover = index === undercoverIndex;
+        player.word = player.isUndercover ? pair.undercover : pair.normal;
+    });
+    clearUndercoverTimer(room);
+    room.timer = setTimeout(() => revealUndercoverRound(room), undercoverVoteDurationMs);
+}
+
+function leaveUndercoverRoom(socket) {
+    const roomCode = socket.data.undercoverRoomCode;
+    if (!roomCode) return;
+
+    socket.data.undercoverRoomCode = null;
+    const room = undercoverRooms.get(roomCode);
+    if (!room) return;
+
+    const player = room.players.get(socket.data.user.id);
+    if (!player || player.socketId !== socket.id) return;
+    room.players.delete(player.userId);
+    room.votes.delete(player.userId);
+    socket.leave(roomCode);
+
+    if (room.players.size === 0) {
+        clearUndercoverTimer(room);
+        undercoverRooms.delete(roomCode);
+        return;
+    }
+    if (room.hostId === player.userId) {
+        room.hostId = room.players.keys().next().value;
+    }
+    if (room.status === "voting" && (player.isUndercover || room.players.size < 3)) {
+        clearUndercoverTimer(room);
+        room.status = "lobby";
+        room.round = 0;
+        room.endsAt = null;
+        room.votes.clear();
+        room.reveal = null;
+        room.players.forEach(member => {
+            member.isUndercover = false;
+            member.word = "";
+        });
+        room.notice = player.isUndercover
+            ? "L'undercover a quitté le salon. La partie est revenue au salon."
+            : "Il faut au moins 3 joueurs. La partie est revenue au salon.";
+        broadcastUndercoverRoom(room);
+    } else {
+        room.notice = "";
+        if (room.status === "voting") {
+            completeUndercoverVoting(room);
+        } else {
+            broadcastUndercoverRoom(room);
+        }
+    }
 }
 
 io.on("connection", socket => {
     socket.emit("chat:history", chatHistory);
     io.emit("chat:presence", io.of("/").sockets.size);
 
+    socket.on("undercover:create", (settings, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const userId = socket.data.user.id;
+        if (findQdnRoomForUser(userId) || findUndercoverRoomForUser(userId)) {
+            return reply({ error: "Tu es déjà dans un salon." });
+        }
+        if (undercoverRooms.size >= 500) {
+            return reply({ error: "Trop de salons sont actuellement ouverts. Réessaie plus tard." });
+        }
+        if (!settings || !Object.hasOwn(undercoverCategories, settings.category)) {
+            return reply({ error: "Choisis une catégorie valide." });
+        }
+        if (!qdnRoundChoices.includes(settings.rounds)) {
+            return reply({ error: "Choisis un nombre de manches valide." });
+        }
+
+        const code = generateQdnRoomCode();
+        const room = {
+            code,
+            hostId: userId,
+            category: settings.category,
+            rounds: settings.rounds,
+            status: "lobby",
+            round: 0,
+            endsAt: null,
+            normalWord: "",
+            undercoverWord: "",
+            players: new Map([[userId, {
+                userId,
+                username: socket.data.user.username,
+                usernameColor: socket.data.user.username_color,
+                socketId: socket.id,
+                score: 0,
+                isUndercover: false,
+                word: ""
+            }]]),
+            votes: new Map(),
+            timer: null,
+            reveal: null,
+            notice: ""
+        };
+        undercoverRooms.set(code, room);
+        socket.data.undercoverRoomCode = code;
+        socket.join(code);
+        reply({ ok: true, code });
+        broadcastUndercoverRoom(room);
+    });
+
+    socket.on("undercover:join", (inputCode, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const code = typeof inputCode === "string" ? inputCode.trim().toUpperCase() : "";
+        if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
+            return reply({ error: "Le code du salon doit contenir 6 caractères valides." });
+        }
+        if (findQdnRoomForUser(socket.data.user.id) || findUndercoverRoomForUser(socket.data.user.id)) {
+            return reply({ error: "Tu es déjà dans un salon." });
+        }
+
+        const room = undercoverRooms.get(code);
+        if (!room) return reply({ error: "Aucun salon Undercover ne correspond à ce code." });
+        if (room.status !== "lobby") return reply({ error: "La partie a déjà commencé." });
+        if (room.players.size >= 12) return reply({ error: "Ce salon est complet (12 joueurs maximum)." });
+
+        const userId = socket.data.user.id;
+        room.players.set(userId, {
+            userId,
+            username: socket.data.user.username,
+            usernameColor: socket.data.user.username_color,
+            socketId: socket.id,
+            score: 0,
+            isUndercover: false,
+            word: ""
+        });
+        room.notice = "";
+        socket.data.undercoverRoomCode = code;
+        socket.join(code);
+        reply({ ok: true, code });
+        broadcastUndercoverRoom(room);
+    });
+
+    socket.on("undercover:leave", (_payload, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        leaveUndercoverRoom(socket);
+        reply({ ok: true });
+    });
+
+    socket.on("undercover:kick", (targetId, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = undercoverRooms.get(socket.data.undercoverRoomCode);
+        if (!room) return reply({ error: "Tu n'es dans aucun salon." });
+        if (room.hostId !== socket.data.user.id) {
+            return reply({ error: "Seul le chef du salon peut expulser un joueur." });
+        }
+        if (!Number.isInteger(targetId) || targetId === socket.data.user.id) {
+            return reply({ error: "Choisis un autre joueur à expulser." });
+        }
+        const target = room.players.get(targetId);
+        if (!target) return reply({ error: "Ce joueur n'est plus dans le salon." });
+
+        const targetSocket = io.sockets.sockets.get(target.socketId);
+        if (targetSocket) {
+            targetSocket.emit("undercover:kicked");
+            leaveUndercoverRoom(targetSocket);
+        } else {
+            room.players.delete(targetId);
+            room.votes.delete(targetId);
+            if (room.hostId === targetId) room.hostId = room.players.keys().next().value;
+            if (room.status === "voting" &&
+                (target.isUndercover || room.players.size < 3)) {
+                clearUndercoverTimer(room);
+                room.status = "lobby";
+                room.round = 0;
+                room.endsAt = null;
+                room.votes.clear();
+                room.reveal = null;
+                room.players.forEach(member => {
+                    member.isUndercover = false;
+                    member.word = "";
+                });
+                room.notice = "Il faut un undercover présent et au moins 3 joueurs. La partie est revenue au salon.";
+            } else {
+                completeUndercoverVoting(room);
+            }
+            broadcastUndercoverRoom(room);
+        }
+        reply({ ok: true });
+    });
+
+    socket.on("undercover:start", (_payload, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = undercoverRooms.get(socket.data.undercoverRoomCode);
+        if (!room) return reply({ error: "Tu n'es dans aucun salon." });
+        if (room.hostId !== socket.data.user.id) {
+            return reply({ error: "Seul le chef du salon peut lancer la partie." });
+        }
+        if (room.status !== "lobby") return reply({ error: "La partie a déjà commencé." });
+        if (room.players.size < 3) {
+            return reply({ error: "Il faut au moins 3 joueurs pour commencer." });
+        }
+
+        for (const player of room.players.values()) player.score = 0;
+        room.round = 1;
+        startUndercoverRound(room);
+        reply({ ok: true });
+        broadcastUndercoverRoom(room);
+    });
+
+    socket.on("undercover:vote", (targetId, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = undercoverRooms.get(socket.data.undercoverRoomCode);
+        if (!room || room.status !== "voting") {
+            return reply({ error: "Aucun vote n'est attendu pour le moment." });
+        }
+        const voter = room.players.get(socket.data.user.id);
+        if (!voter || voter.socketId !== socket.id) {
+            return reply({ error: "Tu ne fais pas partie de ce salon." });
+        }
+        if (voter.isUndercover) {
+            return reply({ error: "L'undercover ne peut pas voter." });
+        }
+        if (room.votes.has(voter.userId)) {
+            return reply({ error: "Tu as déjà voté pour cette manche." });
+        }
+        if (!Number.isInteger(targetId) || targetId === voter.userId || !room.players.has(targetId)) {
+            return reply({ error: "Choisis un autre joueur présent dans le salon." });
+        }
+
+        room.votes.set(voter.userId, targetId);
+        completeUndercoverVoting(room);
+        reply({ ok: true });
+    });
+
+    socket.on("undercover:next", (_payload, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const room = undercoverRooms.get(socket.data.undercoverRoomCode);
+        if (!room) return reply({ error: "Tu n'es dans aucun salon." });
+        if (room.hostId !== socket.data.user.id) {
+            return reply({ error: "Seul le chef du salon peut continuer." });
+        }
+        if (room.status !== "reveal") {
+            return reply({ error: "Attends la fin du vote." });
+        }
+        if (room.players.size < 3) {
+            room.status = "lobby";
+            room.round = 0;
+            room.endsAt = null;
+            room.votes.clear();
+            room.reveal = null;
+            room.notice = "Il faut au moins 3 joueurs pour continuer. La partie est revenue au salon.";
+            room.players.forEach(player => {
+                player.isUndercover = false;
+                player.word = "";
+            });
+            reply({ ok: true });
+            broadcastUndercoverRoom(room);
+            return;
+        }
+        if (room.round >= room.rounds) {
+            room.status = "finished";
+            room.notice = "";
+        } else {
+            room.round++;
+            startUndercoverRound(room);
+        }
+        reply({ ok: true });
+        broadcastUndercoverRoom(room);
+    });
+
     socket.on("qdn:create", (settings, acknowledge) => {
         const reply = typeof acknowledge === "function" ? acknowledge : () => {};
         const userId = socket.data.user.id;
-        if (findQdnRoomForUser(userId)) {
+        if (findQdnRoomForUser(userId) || findUndercoverRoomForUser(userId)) {
             return reply({ error: "Tu es déjà dans un salon." });
         }
         if (qdnRooms.size >= 500) {
@@ -549,7 +949,7 @@ io.on("connection", socket => {
         if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
             return reply({ error: "Le code du salon doit contenir 6 caractères valides." });
         }
-        if (findQdnRoomForUser(socket.data.user.id)) {
+        if (findQdnRoomForUser(socket.data.user.id) || findUndercoverRoomForUser(socket.data.user.id)) {
             return reply({ error: "Tu es déjà dans un salon." });
         }
 
@@ -724,6 +1124,7 @@ io.on("connection", socket => {
 
     socket.on("disconnect", () => {
         leaveQdnRoom(socket);
+        leaveUndercoverRoom(socket);
         io.emit("chat:presence", io.of("/").sockets.size);
     });
 });
