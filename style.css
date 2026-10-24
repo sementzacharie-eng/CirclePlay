@@ -1762,14 +1762,7 @@ body {
     }
 
     #top-logo {
-        margin-bottom: 1vh;
-    }
-
-    #image-logo {
-        width: 65vw;
-        max-width: 320px;
-        height: auto;
-        margin-bottom: 1vh;
+        display: none;
     }
 
     #menu .add-input {

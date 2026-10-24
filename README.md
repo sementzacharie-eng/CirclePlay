@@ -41,6 +41,8 @@ unique de 12 à 72 octets pour créer le compte `admin` au démarrage. Le compte
 administrateur dispose d'un tableau de bord pour consulter les sessions actives,
 voir les pseudos des comptes amis et déconnecter une session. Les mots de passe
 ne sont jamais consultables ; ils ne sont conservés que sous forme de hachage.
+Sur Render, ajoute `CIRCLEPLAY_ADMIN_PASSWORD` dans **Dashboard → ton service →
+Environment → Environment Variables**, puis redéploie le service.
 
 Ouvre ensuite <http://localhost:3000>. Le jeu doit être ouvert depuis cette
 adresse, et non directement depuis `index.html`, pour que les comptes
