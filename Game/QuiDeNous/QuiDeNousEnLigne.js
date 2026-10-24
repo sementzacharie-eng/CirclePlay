@@ -5,6 +5,7 @@ let qdnOnlineDifficulty = "CHILL";
 let qdnOnlineRounds = 10;
 let qdnOnlineSelectedVoteId = null;
 let qdnOnlineSelectionRound = null;
+let qdnOnlineResumePending = false;
 
 function escapeQdnOnlineHtml(value) {
     return String(value).replace(/[&<>"']/g, character => ({
@@ -33,19 +34,27 @@ function getQdnOnlineSocket() {
             qdnOnlineSelectionRound = state.status === "voting" ? state.round : null;
             qdnOnlineRoomState = state;
             qdnOnlineNotice = state.notice || "";
+            saveCirclePlayActiveRoom("qdn-online", state.code);
             renderQdnOnlineRoom(state);
+        });
+        socket.on("connect", () => {
+            const savedRoom = getCirclePlayActiveRoom();
+            if (savedRoom?.game === "qdn-online" && !qdnOnlineRoomState) {
+                restoreQdnOnlineRoom(savedRoom.code);
+            }
         });
         socket.on("disconnect", () => {
             if (!qdnOnlineRoomState) return;
             qdnOnlineRoomState = null;
             qdnOnlineSelectedVoteId = null;
             qdnOnlineSelectionRound = null;
-            qdnOnlineNotice = "Connexion interrompue : tu as quitté le salon. Reconnecte-toi pour en rejoindre un autre.";
+            qdnOnlineNotice = "Connexion interrompue. Ta place est conservée pendant 1 minute : reconnecte-toi pour reprendre la partie.";
             if (document.querySelector(".qdn-online-view")) {
                 renderQdnOnlineHome(qdnOnlineNotice);
             }
         });
         socket.on("qdn:kicked", () => {
+            clearCirclePlayActiveRoom("qdn-online", qdnOnlineRoomState?.code);
             qdnOnlineRoomState = null;
             qdnOnlineSelectedVoteId = null;
             qdnOnlineSelectionRound = null;
@@ -54,14 +63,14 @@ function getQdnOnlineSocket() {
             renderQdnOnlineHome(qdnOnlineNotice);
         });
     }
-    if (!socket.connected) {
-        throw new Error("Connexion au serveur en cours. Réessaie dans un instant.");
-    }
     return socket;
 }
 
 function requestQdnOnline(eventName, payload) {
     const socket = getQdnOnlineSocket();
+    if (!socket.connected) {
+        return Promise.reject(new Error("Connexion au serveur en cours. Réessaie dans un instant."));
+    }
     return new Promise((resolve, reject) => {
         let settled = false;
         const timeout = setTimeout(() => {
@@ -82,6 +91,36 @@ function requestQdnOnline(eventName, payload) {
     });
 }
 
+function restoreQdnOnlineRoom(code) {
+    if (!circlePlayCurrentUser || qdnOnlineResumePending ||
+        qdnOnlineRoomState?.code === code) return;
+    qdnOnlineResumePending = true;
+    showGameRules("quiDeNousOnline");
+    qdnOnlineRoomState = null;
+
+    const resume = () => {
+        requestQdnOnline("qdn:resume", code).catch(error => {
+            if (/^Cette partie|^Tu ne fais plus partie/.test(error.message)) {
+                clearCirclePlayActiveRoom("qdn-online", code);
+            }
+            qdnOnlineNotice = error.message;
+            renderQdnOnlineHome(qdnOnlineNotice);
+        }).finally(() => {
+            qdnOnlineResumePending = false;
+        });
+    };
+
+    try {
+        const socket = getQdnOnlineSocket();
+        if (socket.connected) resume();
+        else socket.once("connect", resume);
+    } catch (error) {
+        qdnOnlineResumePending = false;
+        qdnOnlineNotice = error.message;
+        renderQdnOnlineHome(qdnOnlineNotice);
+    }
+}
+
 function renderQdnOnline(content) {
     const menuContent = document.getElementById("menu-content");
     if (!menuContent) return;
@@ -96,7 +135,12 @@ function QuiDeNousEnLigne() {
     qdnOnlineNotice = "";
     qdnOnlineSelectedVoteId = null;
     qdnOnlineSelectionRound = null;
-    renderQdnOnlineHome();
+    const savedRoom = getCirclePlayActiveRoom();
+    if (savedRoom?.game === "qdn-online") {
+        restoreQdnOnlineRoom(savedRoom.code);
+    } else {
+        renderQdnOnlineHome();
+    }
 }
 
 function renderQdnOnlineHome(message = qdnOnlineNotice) {
@@ -313,6 +357,7 @@ function renderQdnOnlineRoom(state) {
     document.querySelector("[data-qdn-leave]")?.addEventListener("click", async () => {
         try {
             await requestQdnOnline("qdn:leave", null);
+            clearCirclePlayActiveRoom("qdn-online", qdnOnlineRoomState?.code);
             qdnOnlineRoomState = null;
             qdnOnlineNotice = "";
             renderQdnOnlineHome();

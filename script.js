@@ -229,6 +229,71 @@ function setAccountIndicator(user) {
         indicator.hidden = !user;
     }
     setGlobalChatAccount(user);
+    if (user) restoreCirclePlayActiveRoom();
+}
+
+const circlePlayActiveRoomStorageKeyPrefix = "circleplay:active-room:";
+
+function getCirclePlayActiveRoom() {
+    if (!circlePlayCurrentUser) return null;
+
+    const storageKey = `${circlePlayActiveRoomStorageKeyPrefix}${circlePlayCurrentUser.id}`;
+    try {
+        const savedRoom = localStorage.getItem(storageKey);
+        if (!savedRoom) return null;
+        const room = JSON.parse(savedRoom);
+        if (!room || !["qdn-online", "undercover-online"].includes(room.game) ||
+            !/^[A-HJ-NP-Z2-9]{6}$/.test(room.code)) {
+            throw new Error("Les informations du salon sauvegardées sont invalides.");
+        }
+        return room;
+    } catch (error) {
+        console.error("Impossible de lire le salon sauvegardé.", error);
+        try {
+            localStorage.removeItem(storageKey);
+        } catch (storageError) {
+            console.error("Impossible d'effacer le salon sauvegardé invalide.", storageError);
+        }
+        return null;
+    }
+}
+
+function saveCirclePlayActiveRoom(game, code) {
+    if (!circlePlayCurrentUser || !["qdn-online", "undercover-online"].includes(game) ||
+        !/^[A-HJ-NP-Z2-9]{6}$/.test(code)) return;
+
+    try {
+        localStorage.setItem(
+            `${circlePlayActiveRoomStorageKeyPrefix}${circlePlayCurrentUser.id}`,
+            JSON.stringify({ game, code })
+        );
+    } catch (error) {
+        console.error("Impossible de sauvegarder le salon en cours.", error);
+    }
+}
+
+function clearCirclePlayActiveRoom(game, code) {
+    if (!circlePlayCurrentUser) return;
+    const storageKey = `${circlePlayActiveRoomStorageKeyPrefix}${circlePlayCurrentUser.id}`;
+    const savedRoom = getCirclePlayActiveRoom();
+    if (!savedRoom || savedRoom.game !== game || (code && savedRoom.code !== code)) return;
+
+    try {
+        localStorage.removeItem(storageKey);
+    } catch (error) {
+        console.error("Impossible d'effacer le salon sauvegardé.", error);
+    }
+}
+
+function restoreCirclePlayActiveRoom() {
+    const savedRoom = getCirclePlayActiveRoom();
+    if (!savedRoom) return;
+
+    if (savedRoom.game === "qdn-online") {
+        restoreQdnOnlineRoom(savedRoom.code);
+    } else if (savedRoom.game === "undercover-online") {
+        restoreUndercoverRoom(savedRoom.code);
+    }
 }
 
 function appendChatMessage(message) {

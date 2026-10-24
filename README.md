@@ -77,8 +77,9 @@ expulser un joueur grâce au bouton situé à côté de son nom dans la liste.
 Chaque manche affiche la même question à tous ; les votes restent cachés jusqu'à
 ce que tous les joueurs aient voté. Le ou les joueurs ayant reçu le plus de voix
 gagnent les points de la question (les égalités donnent les points à chacun).
-Les salons et les scores sont conservés en mémoire du serveur et disparaissent
-à son redémarrage.
+Après une actualisation, le joueur retrouve son salon automatiquement ; sa place
+est conservée pendant une minute en cas de déconnexion. Les salons et les scores
+restent en mémoire du serveur et disparaissent à son redémarrage.
 
 ## Undercover en ligne
 
@@ -91,7 +92,9 @@ secondes pour découvrir son mot, puis les joueurs parlent à tour de rôle pend
 15 secondes chacun sans prononcer leur mot. Après ce tour de table, les joueurs
 votent pour désigner l'undercover ; celui-ci ne peut pas voter. Le vote se
 termine lorsque tous les joueurs autorisés ont voté. Les règles restent visibles
-dans un panneau à gauche du salon. Le chef lance ensuite la manche suivante.
+dans un panneau à gauche du salon. Après une actualisation, le joueur retrouve
+son salon automatiquement ; sa place est conservée pendant une minute en cas de
+déconnexion. Le chef lance ensuite la manche suivante.
 
 Les paires de mots sont personnalisables dans
 [`data/undercover-categories.js`](./data/undercover-categories.js). Ajoute ou

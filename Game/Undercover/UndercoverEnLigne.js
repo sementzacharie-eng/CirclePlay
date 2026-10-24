@@ -7,6 +7,7 @@ let undercoverRounds = 10;
 let undercoverSelectedVoteId = null;
 let undercoverSelectionRound = null;
 let undercoverClock = null;
+let undercoverResumePending = false;
 
 function escapeUndercoverHtml(value) {
     return String(value).replace(/[&<>"']/g, character => ({
@@ -40,19 +41,27 @@ function getUndercoverSocket() {
             undercoverSelectionRound = state.status === "voting" ? state.round : null;
             undercoverRoomState = state;
             undercoverNotice = state.notice || "";
+            saveCirclePlayActiveRoom("undercover-online", state.code);
             renderUndercoverRoom(state);
+        });
+        socket.on("connect", () => {
+            const savedRoom = getCirclePlayActiveRoom();
+            if (savedRoom?.game === "undercover-online" && !undercoverRoomState) {
+                restoreUndercoverRoom(savedRoom.code);
+            }
         });
         socket.on("disconnect", () => {
             if (!undercoverRoomState) return;
             undercoverRoomState = null;
             undercoverSelectedVoteId = null;
             undercoverSelectionRound = null;
-            undercoverNotice = "Connexion interrompue : tu as quitté le salon. Reconnecte-toi pour en rejoindre un autre.";
+            undercoverNotice = "Connexion interrompue. Ta place est conservée pendant 1 minute : reconnecte-toi pour reprendre la partie.";
             if (document.querySelector(".undercover-online-view")) {
                 renderUndercoverHome(undercoverNotice);
             }
         });
         socket.on("undercover:kicked", () => {
+            clearCirclePlayActiveRoom("undercover-online", undercoverRoomState?.code);
             undercoverRoomState = null;
             undercoverSelectedVoteId = null;
             undercoverSelectionRound = null;
@@ -61,14 +70,14 @@ function getUndercoverSocket() {
             renderUndercoverHome(undercoverNotice);
         });
     }
-    if (!socket.connected) {
-        throw new Error("Connexion au serveur en cours. Réessaie dans un instant.");
-    }
     return socket;
 }
 
 function requestUndercover(eventName, payload = null) {
     const socket = getUndercoverSocket();
+    if (!socket.connected) {
+        return Promise.reject(new Error("Connexion au serveur en cours. Réessaie dans un instant."));
+    }
     return new Promise((resolve, reject) => {
         let settled = false;
         const timeout = setTimeout(() => {
@@ -89,6 +98,43 @@ function requestUndercover(eventName, payload = null) {
     });
 }
 
+function restoreUndercoverRoom(code) {
+    if (!circlePlayCurrentUser || undercoverResumePending ||
+        undercoverRoomState?.code === code) return;
+    undercoverResumePending = true;
+    showGameRules("undercover");
+    undercoverRoomState = null;
+
+    const resume = () => {
+        requestUndercover("undercover:resume", code).catch(async error => {
+            if (/^Cette partie|^Tu ne fais plus partie/.test(error.message)) {
+                clearCirclePlayActiveRoom("undercover-online", code);
+            }
+            undercoverNotice = error.message;
+            if (undercoverCategoriesList.length === 0) {
+                try {
+                    await loadUndercoverCategories();
+                } catch (categoryError) {
+                    undercoverNotice += ` ${categoryError.message}`;
+                }
+            }
+            renderUndercoverHome(undercoverNotice);
+        }).finally(() => {
+            undercoverResumePending = false;
+        });
+    };
+
+    try {
+        const socket = getUndercoverSocket();
+        if (socket.connected) resume();
+        else socket.once("connect", resume);
+    } catch (error) {
+        undercoverResumePending = false;
+        undercoverNotice = error.message;
+        renderUndercoverHome(undercoverNotice);
+    }
+}
+
 function renderUndercover(content) {
     const menuContent = document.getElementById("menu-content");
     if (!menuContent) return;
@@ -96,6 +142,19 @@ function renderUndercover(content) {
     stopCirclePlaySpeech();
     menuContent.innerHTML = content;
     menuContent.style.opacity = "1";
+}
+
+async function loadUndercoverCategories() {
+    const response = await fetch("/api/undercover/categories");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Impossible de charger les catégories.");
+    if (!Array.isArray(result.categories) || result.categories.length === 0) {
+        throw new Error("Aucune catégorie de mots n'est configurée sur le serveur.");
+    }
+    undercoverCategoriesList = result.categories;
+    if (!undercoverCategoriesList.includes(undercoverCategory)) {
+        undercoverCategory = undercoverCategoriesList[0];
+    }
 }
 
 async function UndercoverEnLigne() {
@@ -108,18 +167,14 @@ async function UndercoverEnLigne() {
         renderUndercoverHome();
         return;
     }
+    const savedRoom = getCirclePlayActiveRoom();
+    if (savedRoom?.game === "undercover-online") {
+        restoreUndercoverRoom(savedRoom.code);
+        return;
+    }
 
     try {
-        const response = await fetch("/api/undercover/categories");
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Impossible de charger les catégories.");
-        if (!Array.isArray(result.categories) || result.categories.length === 0) {
-            throw new Error("Aucune catégorie de mots n'est configurée sur le serveur.");
-        }
-        undercoverCategoriesList = result.categories;
-        if (!undercoverCategoriesList.includes(undercoverCategory)) {
-            undercoverCategory = undercoverCategoriesList[0];
-        }
+        await loadUndercoverCategories();
         renderUndercoverHome();
     } catch (error) {
         renderUndercoverHome(error.message);
@@ -391,6 +446,7 @@ function renderUndercoverRoom(state) {
     document.querySelector("[data-undercover-leave]")?.addEventListener("click", async () => {
         try {
             await requestUndercover("undercover:leave");
+            clearCirclePlayActiveRoom("undercover-online", undercoverRoomState?.code);
             undercoverRoomState = null;
             undercoverNotice = "";
             renderUndercoverHome();

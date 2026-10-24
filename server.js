@@ -23,6 +23,7 @@ const qdnRoundChoices = [10, 20, 30, 40, 50];
 const qdnRoomCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const undercoverWordRevealDurationMs = 20 * 1000;
 const undercoverTurnDurationMs = 15 * 1000;
+const roomReconnectGracePeriodMs = 60 * 1000;
 for (const [category, pairs] of Object.entries(undercoverCategories)) {
     if (!category.trim() || !Array.isArray(pairs) || pairs.length === 0 ||
         pairs.some(pair => !pair || typeof pair.normal !== "string" ||
@@ -430,7 +431,9 @@ function getQdnRoomState(room, player) {
 
 function broadcastQdnRoom(room) {
     for (const player of room.players.values()) {
-        io.to(player.socketId).emit("qdn:state", getQdnRoomState(room, player));
+        if (player.socketId) {
+            io.to(player.socketId).emit("qdn:state", getQdnRoomState(room, player));
+        }
     }
 }
 
@@ -463,22 +466,14 @@ function completeQdnVoting(room) {
     broadcastQdnRoom(room);
 }
 
-function leaveQdnRoom(socket) {
-    const roomCode = socket.data.qdnRoomCode;
-    if (!roomCode) return;
-
-    socket.data.qdnRoomCode = null;
-    const room = qdnRooms.get(roomCode);
-    if (!room) return;
-
-    const player = room.players.get(socket.data.user.id);
-    if (!player || player.socketId !== socket.id) return;
+function removeQdnPlayer(room, player) {
+    if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+    player.disconnectTimer = null;
     room.players.delete(player.userId);
     room.votes.delete(player.userId);
-    socket.leave(roomCode);
 
     if (room.players.size === 0) {
-        qdnRooms.delete(roomCode);
+        qdnRooms.delete(room.code);
         return;
     }
     if (room.hostId === player.userId) {
@@ -496,6 +491,36 @@ function leaveQdnRoom(socket) {
     } else {
         completeQdnVoting(room);
     }
+    broadcastQdnRoom(room);
+}
+
+function leaveQdnRoom(socket) {
+    const roomCode = socket.data.qdnRoomCode;
+    socket.data.qdnRoomCode = null;
+    if (!roomCode) return;
+
+    const room = qdnRooms.get(roomCode);
+    if (!room) return;
+    const player = room.players.get(socket.data.user.id);
+    if (!player || player.socketId !== socket.id) return;
+    socket.leave(roomCode);
+    removeQdnPlayer(room, player);
+}
+
+function deferQdnRoomLeave(socket) {
+    const roomCode = socket.data.qdnRoomCode;
+    socket.data.qdnRoomCode = null;
+    if (!roomCode) return;
+
+    const room = qdnRooms.get(roomCode);
+    const player = room?.players.get(socket.data.user.id);
+    if (!room || !player || player.socketId !== socket.id) return;
+
+    player.socketId = null;
+    player.disconnectTimer = setTimeout(() => {
+        if (player.socketId !== null) return;
+        removeQdnPlayer(room, player);
+    }, roomReconnectGracePeriodMs);
     broadcastQdnRoom(room);
 }
 
@@ -557,10 +582,12 @@ function getUndercoverRoomState(room, player) {
 
 function broadcastUndercoverRoom(room) {
     for (const player of room.players.values()) {
-        io.to(player.socketId).emit(
-            "undercover:state",
-            getUndercoverRoomState(room, player)
-        );
+        if (player.socketId) {
+            io.to(player.socketId).emit(
+                "undercover:state",
+                getUndercoverRoomState(room, player)
+            );
+        }
     }
 }
 
@@ -732,29 +759,51 @@ function handleUndercoverPlayerRemoved(room, player) {
     }
 }
 
-function leaveUndercoverRoom(socket) {
-    const roomCode = socket.data.undercoverRoomCode;
-    if (!roomCode) return;
-
-    socket.data.undercoverRoomCode = null;
-    const room = undercoverRooms.get(roomCode);
-    if (!room) return;
-
-    const player = room.players.get(socket.data.user.id);
-    if (!player || player.socketId !== socket.id) return;
+function removeUndercoverPlayer(room, player) {
+    if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+    player.disconnectTimer = null;
     room.players.delete(player.userId);
     room.votes.delete(player.userId);
-    socket.leave(roomCode);
 
     if (room.players.size === 0) {
         clearUndercoverTimer(room);
-        undercoverRooms.delete(roomCode);
+        undercoverRooms.delete(room.code);
         return;
     }
     if (room.hostId === player.userId) {
         room.hostId = room.players.keys().next().value;
     }
     handleUndercoverPlayerRemoved(room, player);
+}
+
+function leaveUndercoverRoom(socket) {
+    const roomCode = socket.data.undercoverRoomCode;
+    socket.data.undercoverRoomCode = null;
+    if (!roomCode) return;
+
+    const room = undercoverRooms.get(roomCode);
+    if (!room) return;
+    const player = room.players.get(socket.data.user.id);
+    if (!player || player.socketId !== socket.id) return;
+    socket.leave(roomCode);
+    removeUndercoverPlayer(room, player);
+}
+
+function deferUndercoverRoomLeave(socket) {
+    const roomCode = socket.data.undercoverRoomCode;
+    socket.data.undercoverRoomCode = null;
+    if (!roomCode) return;
+
+    const room = undercoverRooms.get(roomCode);
+    const player = room?.players.get(socket.data.user.id);
+    if (!room || !player || player.socketId !== socket.id) return;
+
+    player.socketId = null;
+    player.disconnectTimer = setTimeout(() => {
+        if (player.socketId !== null) return;
+        removeUndercoverPlayer(room, player);
+    }, roomReconnectGracePeriodMs);
+    broadcastUndercoverRoom(room);
 }
 
 io.on("connection", socket => {
@@ -795,6 +844,7 @@ io.on("connection", socket => {
                 username: socket.data.user.username,
                 usernameColor: socket.data.user.username_color,
                 socketId: socket.id,
+                disconnectTimer: null,
                 score: 0,
                 isUndercover: false,
                 word: ""
@@ -805,6 +855,39 @@ io.on("connection", socket => {
             notice: ""
         };
         undercoverRooms.set(code, room);
+        socket.data.undercoverRoomCode = code;
+        socket.join(code);
+        reply({ ok: true, code });
+        broadcastUndercoverRoom(room);
+    });
+
+    socket.on("undercover:resume", (inputCode, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const code = typeof inputCode === "string" ? inputCode.trim().toUpperCase() : "";
+        const room = undercoverRooms.get(code);
+        const userId = socket.data.user.id;
+        if (!room) return reply({ error: "Cette partie Undercover n'est plus disponible." });
+        const qdnRoom = findQdnRoomForUser(userId);
+        if (qdnRoom && qdnRoom.code !== code) {
+            return reply({ error: "Tu participes déjà à une autre partie." });
+        }
+        const currentUndercoverRoom = findUndercoverRoomForUser(userId);
+        if (currentUndercoverRoom && currentUndercoverRoom.code !== code) {
+            return reply({ error: "Tu participes déjà à une autre partie." });
+        }
+        const player = room.players.get(userId);
+        if (!player) return reply({ error: "Tu ne fais plus partie de ce salon." });
+
+        if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+        if (player.socketId && player.socketId !== socket.id) {
+            const previousSocket = io.sockets.sockets.get(player.socketId);
+            if (previousSocket) {
+                previousSocket.data.undercoverRoomCode = null;
+                previousSocket.leave(code);
+            }
+        }
+        player.disconnectTimer = null;
+        player.socketId = socket.id;
         socket.data.undercoverRoomCode = code;
         socket.join(code);
         reply({ ok: true, code });
@@ -832,6 +915,7 @@ io.on("connection", socket => {
             username: socket.data.user.username,
             usernameColor: socket.data.user.username_color,
             socketId: socket.id,
+            disconnectTimer: null,
             score: 0,
             isUndercover: false,
             word: ""
@@ -867,10 +951,8 @@ io.on("connection", socket => {
             targetSocket.emit("undercover:kicked");
             leaveUndercoverRoom(targetSocket);
         } else {
-            room.players.delete(targetId);
-            room.votes.delete(targetId);
             if (room.hostId === targetId) room.hostId = room.players.keys().next().value;
-            handleUndercoverPlayerRemoved(room, target);
+            removeUndercoverPlayer(room, target);
         }
         reply({ ok: true });
     });
@@ -987,6 +1069,7 @@ io.on("connection", socket => {
                 username: socket.data.user.username,
                 usernameColor: socket.data.user.username_color,
                 socketId: socket.id,
+                disconnectTimer: null,
                 score: 0
             }]]),
             votes: new Map(),
@@ -994,6 +1077,39 @@ io.on("connection", socket => {
             notice: ""
         };
         qdnRooms.set(code, room);
+        socket.data.qdnRoomCode = code;
+        socket.join(code);
+        reply({ ok: true, code });
+        broadcastQdnRoom(room);
+    });
+
+    socket.on("qdn:resume", (inputCode, acknowledge) => {
+        const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+        const code = typeof inputCode === "string" ? inputCode.trim().toUpperCase() : "";
+        const room = qdnRooms.get(code);
+        const userId = socket.data.user.id;
+        if (!room) return reply({ error: "Cette partie Qui de nous ? n'est plus disponible." });
+        const undercoverRoom = findUndercoverRoomForUser(userId);
+        if (undercoverRoom) {
+            return reply({ error: "Tu participes déjà à une autre partie." });
+        }
+        const currentQdnRoom = findQdnRoomForUser(userId);
+        if (currentQdnRoom && currentQdnRoom.code !== code) {
+            return reply({ error: "Tu participes déjà à une autre partie." });
+        }
+        const player = room.players.get(userId);
+        if (!player) return reply({ error: "Tu ne fais plus partie de ce salon." });
+
+        if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+        if (player.socketId && player.socketId !== socket.id) {
+            const previousSocket = io.sockets.sockets.get(player.socketId);
+            if (previousSocket) {
+                previousSocket.data.qdnRoomCode = null;
+                previousSocket.leave(code);
+            }
+        }
+        player.disconnectTimer = null;
+        player.socketId = socket.id;
         socket.data.qdnRoomCode = code;
         socket.join(code);
         reply({ ok: true, code });
@@ -1021,6 +1137,7 @@ io.on("connection", socket => {
             username: socket.data.user.username,
             usernameColor: socket.data.user.username_color,
             socketId: socket.id,
+            disconnectTimer: null,
             score: 0
         });
         room.notice = "";
@@ -1054,19 +1171,7 @@ io.on("connection", socket => {
             targetSocket.emit("qdn:kicked");
             leaveQdnRoom(targetSocket);
         } else {
-            room.players.delete(targetId);
-            room.votes.delete(targetId);
-            if (room.players.size < 2 && room.status !== "lobby" && room.status !== "finished") {
-                room.status = "lobby";
-                room.round = 0;
-                room.question = null;
-                room.reveal = null;
-                room.votes.clear();
-                room.notice = "Il faut au moins 2 joueurs. La partie est revenue au salon.";
-            } else {
-                completeQdnVoting(room);
-            }
-            broadcastQdnRoom(room);
+            removeQdnPlayer(room, target);
         }
         reply({ ok: true });
     });
@@ -1180,8 +1285,8 @@ io.on("connection", socket => {
     });
 
     socket.on("disconnect", () => {
-        leaveQdnRoom(socket);
-        leaveUndercoverRoom(socket);
+        deferQdnRoomLeave(socket);
+        deferUndercoverRoomLeave(socket);
         io.emit("chat:presence", io.of("/").sockets.size);
     });
 });
