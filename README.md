@@ -29,11 +29,18 @@ Pour personnaliser les variables d'environnement, copie le modèle :
 Copy-Item .env.example .env
 ```
 
-En développement, la configuration par défaut suffit :
+En développement, configure le mot de passe administrateur dans `.env`, puis
+démarre le serveur :
 
 ```powershell
 npm start
 ```
+
+Configure aussi `CIRCLEPLAY_ADMIN_PASSWORD` dans `.env` avec un mot de passe
+unique de 12 à 72 octets pour créer le compte `admin` au démarrage. Le compte
+administrateur dispose d'un tableau de bord pour consulter les sessions actives,
+voir les pseudos des comptes amis et déconnecter une session. Les mots de passe
+ne sont jamais consultables ; ils ne sont conservés que sous forme de hachage.
 
 Ouvre ensuite <http://localhost:3000>. Le jeu doit être ouvert depuis cette
 adresse, et non directement depuis `index.html`, pour que les comptes
@@ -58,8 +65,8 @@ parmi 10 couleurs proposées dans le profil et s'affiche dans le chat global.
 Les comptes **Zacharie**, **Ilan**, **Allan**, **Nina**, **Nathan** et **Julia**
 sont créés automatiquement au premier démarrage, chacun avec le mot de passe
 `1234`. Un seul appareil peut être connecté à un compte à la fois : une nouvelle
-connexion ferme la session précédente. N'expose pas ces identifiants par défaut
-sur un serveur public.
+connexion est refusée tant que la session active n'est pas déconnectée. N'expose
+pas ces identifiants par défaut sur un serveur public.
 
 ## Chat global
 

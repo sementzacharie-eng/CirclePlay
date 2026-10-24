@@ -49,9 +49,14 @@ const app = express();
 const port = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === "production";
 const dataDirectory = path.join(__dirname, "data");
+const adminPassword = process.env.CIRCLEPLAY_ADMIN_PASSWORD;
 
 if (isProduction && !process.env.SESSION_SECRET) {
     throw new Error("La variable SESSION_SECRET est obligatoire en production.");
+}
+if (typeof adminPassword !== "string" || Buffer.byteLength(adminPassword, "utf8") < 12 ||
+    Buffer.byteLength(adminPassword, "utf8") > 72) {
+    throw new Error("Configure CIRCLEPLAY_ADMIN_PASSWORD avec 12 à 72 octets avant de démarrer.");
 }
 
 fs.mkdirSync(dataDirectory, { recursive: true });
@@ -64,6 +69,7 @@ database.exec(`
         username TEXT NOT NULL COLLATE NOCASE UNIQUE,
         password_hash TEXT NOT NULL,
         username_color TEXT NOT NULL DEFAULT '#f5c7d7',
+        is_admin INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS active_account_sessions (
@@ -77,6 +83,9 @@ database.exec(`
 const userColumns = database.prepare("PRAGMA table_info(users)").all();
 if (!userColumns.some(column => column.name === "username_color")) {
     database.exec("ALTER TABLE users ADD COLUMN username_color TEXT NOT NULL DEFAULT '#f5c7d7'");
+}
+if (!userColumns.some(column => column.name === "is_admin")) {
+    database.exec("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0");
 }
 
 class SqliteSessionStore extends session.Store {
@@ -155,10 +164,10 @@ class SqliteSessionStore extends session.Store {
 
 const sessionStore = new SqliteSessionStore(database);
 const findUserByUsername = database.prepare(
-    "SELECT id, username, password_hash, username_color FROM users WHERE username = ? COLLATE NOCASE"
+    "SELECT id, username, password_hash, username_color, is_admin FROM users WHERE username = ? COLLATE NOCASE"
 );
 const findUserById = database.prepare(
-    "SELECT id, username, username_color FROM users WHERE id = ?"
+    "SELECT id, username, username_color, is_admin FROM users WHERE id = ?"
 );
 const updateUsernameColor = database.prepare(
     "UPDATE users SET username_color = ? WHERE id = ?"
@@ -169,17 +178,59 @@ const createUser = database.prepare(
 const updateUserPassword = database.prepare(
     "UPDATE users SET password_hash = ? WHERE id = ?"
 );
+const configureAdminAccount = database.prepare(
+    "UPDATE users SET password_hash = ?, is_admin = 1 WHERE id = ?"
+);
 const findActiveAccountSession = database.prepare(
     "SELECT sid FROM active_account_sessions WHERE user_id = ?"
 );
-const replaceActiveAccountSession = database.prepare(`
-    INSERT INTO active_account_sessions (user_id, sid) VALUES (?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET sid = excluded.sid
-`);
+const claimActiveAccountSession = database.prepare(
+    "INSERT OR IGNORE INTO active_account_sessions (user_id, sid) VALUES (?, ?)"
+);
 const deleteActiveAccountSession = database.prepare(
     "DELETE FROM active_account_sessions WHERE user_id = ? AND sid = ?"
 );
 const deleteStoredSession = database.prepare("DELETE FROM sessions WHERE sid = ?");
+const findStoredSession = database.prepare("SELECT sess, expire FROM sessions WHERE sid = ?");
+function getValidActiveAccountSession(userId) {
+    const activeSession = findActiveAccountSession.get(userId);
+    if (!activeSession) return null;
+    const storedSession = findStoredSession.get(activeSession.sid);
+    if (!storedSession || storedSession.expire <= Date.now()) {
+        deleteActiveAccountSession.run(userId, activeSession.sid);
+        deleteStoredSession.run(activeSession.sid);
+        return null;
+    }
+    let sessionData;
+    try {
+        sessionData = JSON.parse(storedSession.sess);
+    } catch (error) {
+        console.error(`Session invalide supprimée pour le compte ${userId}.`, error);
+        deleteActiveAccountSession.run(userId, activeSession.sid);
+        deleteStoredSession.run(activeSession.sid);
+        return null;
+    }
+    if (sessionData.userId !== userId) {
+        deleteActiveAccountSession.run(userId, activeSession.sid);
+        return null;
+    }
+    return activeSession;
+}
+
+const findActiveAccounts = database.prepare(`
+    SELECT users.id, users.username, users.username_color, users.is_admin,
+        active_account_sessions.sid, sessions.sess, sessions.expire
+    FROM active_account_sessions
+    JOIN users ON users.id = active_account_sessions.user_id
+    JOIN sessions ON sessions.sid = active_account_sessions.sid
+    WHERE sessions.expire > ?
+    ORDER BY users.username COLLATE NOCASE
+`);
+const findFriendAccounts = database.prepare(`
+    SELECT id, username FROM users
+    WHERE username COLLATE NOCASE IN (?, ?, ?, ?, ?, ?)
+    ORDER BY username COLLATE NOCASE
+`);
 const hasMigration = database.prepare("SELECT 1 FROM app_migrations WHERE name = ?");
 const recordMigration = database.prepare("INSERT INTO app_migrations (name) VALUES (?)");
 
@@ -204,6 +255,23 @@ const seedDefaultAccounts = database.transaction(() => {
     recordMigration.run(migrationName);
 });
 seedDefaultAccounts();
+const adminUser = findUserByUsername.get("admin");
+const adminPasswordHash = bcrypt.hashSync(adminPassword, 12);
+if (adminUser) {
+    const activeAdminSession = findActiveAccountSession.get(adminUser.id);
+    if (activeAdminSession) {
+        deleteStoredSession.run(activeAdminSession.sid);
+        deleteActiveAccountSession.run(adminUser.id, activeAdminSession.sid);
+    }
+    configureAdminAccount.run(adminPasswordHash, adminUser.id);
+} else {
+    createUser.run(
+        "admin",
+        adminPasswordHash,
+        usernameColors[crypto.randomInt(usernameColors.length)]
+    );
+    database.prepare("UPDATE users SET is_admin = 1 WHERE username = ? COLLATE NOCASE").run("admin");
+}
 
 app.disable("x-powered-by");
 if (isProduction) app.set("trust proxy", 1);
@@ -259,45 +327,102 @@ function saveSession(req) {
 }
 
 async function activateAccountSession(req, userId) {
-    const previousSessionId = findActiveAccountSession.get(userId)?.sid;
     req.session.userId = userId;
     await saveSession(req);
+    const claim = claimActiveAccountSession.run(userId, req.sessionID);
+    if (claim.changes === 1) return true;
+    deleteStoredSession.run(req.sessionID);
+    return false;
+}
+
+function requireAdmin(req, res, next) {
+    try {
+        const userId = req.session.userId;
+        if (!userId || getValidActiveAccountSession(userId)?.sid !== req.sessionID) {
+            return res.status(401).json({ error: "Connecte-toi pour accéder à l'administration." });
+        }
+        const user = findUserById.get(userId);
+        if (!user?.is_admin) {
+            return res.status(403).json({ error: "Accès réservé à l'administration." });
+        }
+        req.adminUser = user;
+        next();
+    } catch (error) {
+        next(error);
+    }
+}
+
+function getConnectedAccounts() {
+    const connectedAccounts = [];
+    const connectedSessions = new Set(
+        Array.from(io.sockets.sockets.values())
+            .filter(socket => socket.connected)
+            .map(socket => socket.data.sessionId)
+    );
+    for (const account of findActiveAccounts.all(Date.now())) {
+        if (!connectedSessions.has(account.sid)) continue;
+        let storedSession;
+        try {
+            storedSession = JSON.parse(account.sess);
+        } catch (error) {
+            console.error(`Session invalide supprimée pour le compte ${account.id}.`, error);
+            deleteStoredSession.run(account.sid);
+            deleteActiveAccountSession.run(account.id, account.sid);
+            continue;
+        }
+        if (storedSession.userId !== account.id) {
+            deleteActiveAccountSession.run(account.id, account.sid);
+            continue;
+        }
+        connectedAccounts.push({
+            id: account.id,
+            username: account.username,
+            usernameColor: account.username_color,
+            isAdmin: Boolean(account.is_admin),
+            isFriend: defaultAccountNames.some(name =>
+                name.toLocaleLowerCase("fr") === account.username.toLocaleLowerCase("fr")
+            )
+        });
+    }
+    return connectedAccounts;
+}
+
+function disconnectAccount(userId) {
+    const activeSession = getValidActiveAccountSession(userId);
+    if (!activeSession) return false;
+    const storedSession = findStoredSession.get(activeSession.sid);
+    if (!storedSession || storedSession.expire <= Date.now()) {
+        deleteActiveAccountSession.run(userId, activeSession.sid);
+        deleteStoredSession.run(activeSession.sid);
+        return false;
+    }
 
     database.transaction(() => {
-        replaceActiveAccountSession.run(userId, req.sessionID);
-        if (previousSessionId && previousSessionId !== req.sessionID) {
-            deleteStoredSession.run(previousSessionId);
-        }
+        deleteActiveAccountSession.run(userId, activeSession.sid);
+        deleteStoredSession.run(activeSession.sid);
     })();
-
-    if (previousSessionId && previousSessionId !== req.sessionID) {
-        const previousSockets = Array.from(io.sockets.sockets.values())
-            .filter(socket => socket.data.sessionId === previousSessionId);
-        for (const previousSocket of previousSockets) {
-            previousSocket.emit("account:session-replaced", () => {
-                previousSocket.disconnect(true);
-            });
-        }
-        if (previousSockets.length > 0) {
-            const disconnectFallback = setTimeout(() => {
-                for (const previousSocket of previousSockets) {
-                    if (previousSocket.connected) previousSocket.disconnect(true);
-                }
-            }, 1000);
-            disconnectFallback.unref();
+    for (const socket of io.sockets.sockets.values()) {
+        if (socket.data.sessionId === activeSession.sid) {
+            socket.emit("account:disconnected-by-admin", () => socket.disconnect(true));
         }
     }
+    return true;
 }
 
 app.get("/api/auth/me", (req, res, next) => {
     try {
         const user = req.session.userId &&
-            findActiveAccountSession.get(req.session.userId)?.sid === req.sessionID
+            getValidActiveAccountSession(req.session.userId)?.sid === req.sessionID
             ? findUserById.get(req.session.userId)
             : null;
         res.json({
             user: user
-                ? { id: user.id, username: user.username, usernameColor: user.username_color }
+                ? {
+                    id: user.id,
+                    username: user.username,
+                    usernameColor: user.username_color,
+                    isAdmin: Boolean(user.is_admin)
+                }
                 : null
         });
     } catch (error) {
@@ -317,12 +442,17 @@ app.post("/api/auth/register", authRateLimit, async (req, res, next) => {
         const usernameColor = usernameColors[crypto.randomInt(usernameColors.length)];
         const result = createUser.run(username, passwordHash, usernameColor);
         await regenerateSession(req);
-        await activateAccountSession(req, Number(result.lastInsertRowid));
+        const activated = await activateAccountSession(req, Number(result.lastInsertRowid));
+        if (!activated) {
+            res.clearCookie("circleplay.sid");
+            return res.status(409).json({ error: "Ce compte est déjà connecté." });
+        }
         res.status(201).json({
             user: {
                 id: Number(result.lastInsertRowid),
                 username,
-                usernameColor
+                usernameColor,
+                isAdmin: false
             }
         });
     } catch (error) {
@@ -347,13 +477,36 @@ app.post("/api/auth/login", authRateLimit, async (req, res, next) => {
         if (!passwordMatches) {
             return res.status(401).json({ error: "Pseudo ou mot de passe incorrect." });
         }
+        const activeSession = getValidActiveAccountSession(user.id);
+        if (activeSession && activeSession.sid === req.sessionID) {
+            return res.json({
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    usernameColor: user.username_color,
+                    isAdmin: Boolean(user.is_admin)
+                }
+            });
+        }
+        if (activeSession) {
+            return res.status(409).json({
+                error: "Ce compte est déjà connecté. Déconnecte d'abord l'autre session."
+            });
+        }
         await regenerateSession(req);
-        await activateAccountSession(req, user.id);
+        const activated = await activateAccountSession(req, user.id);
+        if (!activated) {
+            res.clearCookie("circleplay.sid");
+            return res.status(409).json({
+                error: "Ce compte vient d'être connecté sur une autre session."
+            });
+        }
         res.json({
             user: {
                 id: user.id,
                 username: user.username,
-                usernameColor: user.username_color
+                usernameColor: user.username_color,
+                isAdmin: Boolean(user.is_admin)
             }
         });
     } catch (error) {
@@ -367,7 +520,7 @@ app.post("/api/profile/color", (req, res, next) => {
         return res.status(400).json({ error: "Choisis une couleur valide." });
     }
     if (!req.session.userId ||
-        findActiveAccountSession.get(req.session.userId)?.sid !== req.sessionID) {
+        getValidActiveAccountSession(req.session.userId)?.sid !== req.sessionID) {
         return res.status(401).json({ error: "Connecte-toi pour modifier ton profil." });
     }
 
@@ -392,7 +545,8 @@ app.post("/api/profile/color", (req, res, next) => {
             user: {
                 id: user.id,
                 username: user.username,
-                usernameColor: user.username_color
+                usernameColor: user.username_color,
+                isAdmin: Boolean(user.is_admin)
             }
         });
     } catch (error) {
@@ -418,9 +572,38 @@ app.post("/api/auth/logout", (req, res, next) => {
     });
 });
 
+app.get("/api/admin/accounts", requireAdmin, (req, res, next) => {
+    try {
+        const connectedAccounts = getConnectedAccounts();
+        const connectedIds = new Set(connectedAccounts.map(account => account.id));
+        const friendAccounts = findFriendAccounts.all(...defaultAccountNames).map(account => ({
+            id: account.id,
+            username: account.username,
+            isOnline: connectedIds.has(account.id)
+        }));
+        res.json({ connectedAccounts, friendAccounts });
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.post("/api/admin/accounts/:userId/disconnect", requireAdmin, (req, res) => {
+    const userId = Number(req.params.userId);
+    if (!Number.isSafeInteger(userId) || userId <= 0) {
+        return res.status(400).json({ error: "Identifiant de compte invalide." });
+    }
+    if (!findUserById.get(userId)) {
+        return res.status(404).json({ error: "Ce compte n'existe pas." });
+    }
+    if (!disconnectAccount(userId)) {
+        return res.status(404).json({ error: "Ce compte n'a plus de session active." });
+    }
+    res.json({ ok: true });
+});
+
 app.get("/api/undercover/categories", (req, res) => {
     if (!req.session.userId ||
-        findActiveAccountSession.get(req.session.userId)?.sid !== req.sessionID) {
+        getValidActiveAccountSession(req.session.userId)?.sid !== req.sessionID) {
         return res.status(401).json({ error: "Connecte-toi pour voir les catégories." });
     }
     res.json({ categories: Object.keys(undercoverCategories) });
@@ -455,14 +638,14 @@ io.engine.use(sessionMiddleware);
 io.use((socket, next) => {
     const userId = socket.request.session && socket.request.session.userId;
     const user = userId ? findUserById.get(userId) : null;
-    if (!user || findActiveAccountSession.get(userId)?.sid !== socket.request.sessionID) {
+    if (!user || getValidActiveAccountSession(userId)?.sid !== socket.request.sessionID) {
         return next(new Error("AUTH_REQUIRED"));
     }
 
     socket.data.user = user;
     socket.data.sessionId = socket.request.sessionID;
     socket.use((_packet, next) => {
-        if (findActiveAccountSession.get(userId)?.sid !== socket.data.sessionId) {
+        if (getValidActiveAccountSession(userId)?.sid !== socket.data.sessionId) {
             socket.disconnect(true);
             return;
         }

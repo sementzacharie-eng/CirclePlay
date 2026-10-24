@@ -212,12 +212,138 @@ document.getElementById("game-rules-toggle")?.addEventListener("click", () => {
 
 function showMainMenu() {
     hideGameRules();
+    const chatPanel = document.getElementById("global-chat");
+    if (chatPanel && circlePlayCurrentUser) chatPanel.hidden = false;
     fadeMenuContent(`
         <h2>Menu Principal</h2>
         <button onclick="menuDevice()">Jeux 🎮</button>
         <button onclick="showProfile()">Profil ⚙️</button>
+        ${circlePlayCurrentUser?.isAdmin ? '<button onclick="showAdminDashboard()">Administration 🛡️</button>' : ""}
         <button onclick="showCredits()">Crédits 👑</button>
     `);
+}
+
+function showAdminDashboard() {
+    if (!circlePlayCurrentUser?.isAdmin) {
+        showMainMenu();
+        return;
+    }
+    if (window.matchMedia("(max-width: 768px)").matches) {
+        const chatPanel = document.getElementById("global-chat");
+        const chatToggle = document.getElementById("chat-toggle");
+        if (chatPanel && chatToggle) {
+            chatPanel.hidden = true;
+            chatPanel.classList.add("is-collapsed");
+            chatToggle.setAttribute("aria-expanded", "false");
+            chatToggle.setAttribute("aria-label", "Ouvrir le chat");
+            chatToggle.textContent = "+";
+        }
+    }
+    hideGameRules();
+    fadeMenuContent(`
+        <section class="admin-dashboard" aria-labelledby="admin-dashboard-title">
+            <h2 id="admin-dashboard-title">Administration</h2>
+            <p class="admin-dashboard-note">Comptes connectés et comptes amis. Les mots de passe ne sont jamais affichés.</p>
+            <p class="admin-dashboard-status" role="status" aria-live="polite">Chargement des comptes…</p>
+            <section class="admin-account-section">
+                <h3>En ligne <span data-admin-online-count>0</span></h3>
+                <ul class="admin-account-list" data-admin-connected-list></ul>
+            </section>
+            <section class="admin-account-section">
+                <h3>Comptes amis</h3>
+                <ul class="admin-account-list admin-friend-list" data-admin-friend-list></ul>
+            </section>
+            <div class="admin-dashboard-actions">
+                <button type="button" data-admin-refresh>Actualiser</button>
+                <button class="btn-retour" type="button" data-admin-back>← Menu</button>
+            </div>
+        </section>
+    `, () => {
+        document.querySelector("[data-admin-back]")?.addEventListener("click", showMainMenu);
+        document.querySelector("[data-admin-refresh]")?.addEventListener("click", refreshAdminDashboard);
+        refreshAdminDashboard();
+    });
+}
+
+async function refreshAdminDashboard() {
+    const dashboard = document.querySelector(".admin-dashboard");
+    if (!dashboard || !circlePlayCurrentUser?.isAdmin) return;
+    const status = dashboard.querySelector(".admin-dashboard-status");
+    status.textContent = "Chargement des comptes…";
+    status.classList.remove("is-error");
+
+    try {
+        const response = await fetch("/api/admin/accounts");
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Impossible de charger les comptes.");
+        if (!dashboard.isConnected) return;
+
+        const connectedList = dashboard.querySelector("[data-admin-connected-list]");
+        const friendList = dashboard.querySelector("[data-admin-friend-list]");
+        const onlineCount = dashboard.querySelector("[data-admin-online-count]");
+        connectedList.replaceChildren();
+        friendList.replaceChildren();
+        onlineCount.textContent = String(result.connectedAccounts.length);
+        status.textContent = result.connectedAccounts.length
+            ? "Comptes connectés à CirclePlay."
+            : "Aucun compte connecté.";
+
+        const appendAccount = (list, account, isOnline) => {
+            const item = document.createElement("li");
+            item.className = "admin-account-card";
+            const name = document.createElement("strong");
+            name.textContent = account.username;
+            if (/^#[0-9a-f]{6}$/i.test(account.usernameColor || "")) {
+                name.style.color = account.usernameColor;
+            }
+            const state = document.createElement("span");
+            state.className = isOnline ? "admin-account-state is-online" : "admin-account-state";
+            state.textContent = isOnline ? "En ligne" : "Hors ligne";
+            item.append(name, state);
+            if (isOnline) {
+                const disconnect = document.createElement("button");
+                disconnect.className = "admin-disconnect-button";
+                disconnect.type = "button";
+                disconnect.textContent = "Déconnecter";
+                disconnect.setAttribute("aria-label", `Déconnecter ${account.username}`);
+                disconnect.addEventListener("click", async () => {
+                    if (!window.confirm(`Déconnecter ${account.username} ?`)) return;
+                    disconnect.disabled = true;
+                    try {
+                        const kickResponse = await fetch(
+                            `/api/admin/accounts/${account.id}/disconnect`,
+                            { method: "POST" }
+                        );
+                        const kickResult = await kickResponse.json();
+                        if (!kickResponse.ok) {
+                            throw new Error(kickResult.error || "La déconnexion a échoué.");
+                        }
+                        status.textContent = `${account.username} a été déconnecté.`;
+                        await refreshAdminDashboard();
+                    } catch (error) {
+                        status.textContent = error.message;
+                        status.classList.add("is-error");
+                        disconnect.disabled = false;
+                    }
+                });
+                item.appendChild(disconnect);
+            }
+            list.appendChild(item);
+        };
+
+        result.connectedAccounts.forEach(account => appendAccount(connectedList, account, true));
+        result.friendAccounts.forEach(account => appendAccount(friendList, account, account.isOnline));
+        if (result.connectedAccounts.length === 0) {
+            const empty = document.createElement("li");
+            empty.className = "admin-account-empty";
+            empty.textContent = "Personne n’est connecté pour le moment.";
+            connectedList.appendChild(empty);
+        }
+    } catch (error) {
+        if (!dashboard.isConnected) return;
+        status.textContent = error.message;
+        status.classList.add("is-error");
+    }
 }
 
 function setAccountIndicator(user) {
@@ -250,6 +376,9 @@ function setAccountIndicator(user) {
         indicator.hidden = !user;
     }
     setGlobalChatAccount(user);
+    if (document.querySelector("#menu-content > h2")?.textContent === "Menu Principal") {
+        showMainMenu();
+    }
     if (user) restoreCirclePlayActiveRoom();
 }
 
@@ -374,10 +503,11 @@ function setGlobalChatAccount(user) {
     const form = document.getElementById("chat-form");
     const input = document.getElementById("chat-input");
 
-    socket.on("account:session-replaced", acknowledge => {
+    socket.on("account:disconnected-by-admin", acknowledge => {
         if (typeof acknowledge === "function") acknowledge();
         setAccountIndicator(null);
-        window.alert("Ce compte a été connecté sur un autre appareil. Cette session a été fermée.");
+        window.alert("Un administrateur a fermé cette session.");
+        showProfile("login");
     });
     const toggle = document.getElementById("chat-toggle");
 
