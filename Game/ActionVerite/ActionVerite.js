@@ -19,6 +19,7 @@ function stopActionVeriteSpeech() {
 /* ----------------------------- */
 
 function ActionVerity() {
+    showGameRules("actionTruth");
     stopActionVeriteSpeech();
     fadeMenuContent(`
         <h2>Action ou Vérité</h2>

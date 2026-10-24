@@ -91,6 +91,7 @@ function renderQdnOnline(content) {
 }
 
 function QuiDeNousEnLigne() {
+    showGameRules("quiDeNousOnline");
     qdnOnlineRoomState = null;
     qdnOnlineNotice = "";
     qdnOnlineSelectedVoteId = null;
@@ -117,6 +118,7 @@ function renderQdnOnlineHome(message = qdnOnlineNotice) {
         <section class="qdn-online-view">
             <h2>Qui de nous ? en ligne</h2>
             <p class="qdn-online-intro">Crée un salon comme chef ou rejoins tes amis avec leur code.</p>
+            <div class="qdn-online-options">
             <form class="qdn-online-create">
                 <h3>Créer un salon</h3>
                 <label for="qdn-online-difficulty">Difficulté</label>
@@ -141,6 +143,7 @@ function renderQdnOnlineHome(message = qdnOnlineNotice) {
                     pattern="[A-HJ-NP-Z2-9]{6}" autocomplete="off" placeholder="Ex. ABC123" required>
                 <button type="submit">Rejoindre</button>
             </form>
+            </div>
             <p class="qdn-online-status${message ? " is-error" : ""}" role="${message ? "alert" : "status"}">${escapeQdnOnlineHtml(message)}</p>
             <button class="btn-retour" type="button" data-qdn-back>← Retour</button>
         </section>

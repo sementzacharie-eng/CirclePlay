@@ -26,42 +26,16 @@
             </div>
         </div>
 
-        <aside id="undercover-rules-panel" aria-label="Règles du jeu Undercover" hidden>
-            <header class="undercover-rules-header">
+        <aside id="game-rules-panel" aria-label="Règles du jeu" hidden>
+            <header class="game-rules-header">
                 <div>
-                    <h2>Règles d'Undercover</h2>
-                    <p>Le déroulement d'une manche</p>
+                    <h2 id="game-rules-title">Règles du jeu</h2>
+                    <p id="game-rules-subtitle"></p>
                 </div>
-                <button id="undercover-rules-toggle" type="button" aria-expanded="true"
+                <button id="game-rules-toggle" type="button" aria-expanded="true"
                     aria-label="Réduire les règles">−</button>
             </header>
-            <div class="undercover-rules-body">
-                <ol>
-                    <li>
-                        <strong>Découvrez votre mot — 20 secondes</strong>
-                        <span>Chaque joueur voit son mot secret. Gardez-le pour vous : ne le montrez pas et ne le prononcez pas.</span>
-                    </li>
-                    <li>
-                        <strong>Décrivez votre mot — 15 secondes chacun</strong>
-                        <span>Suivez l'ordre des joueurs affiché à l'écran. Donnez un indice qui montre que vous connaissez le mot, sans le révéler directement.</span>
-                    </li>
-                    <li>
-                        <strong>Repérez l'Undercover</strong>
-                        <span>L'Undercover reçoit un mot différent, mais lié au même thème. Il doit écouter les autres et improviser pour ne pas se faire repérer.</span>
-                    </li>
-                    <li>
-                        <strong>Votez après le tour de table</strong>
-                        <span>Choisissez le joueur que vous soupçonnez. Les choix restent secrets jusqu'à la fin du vote. L'Undercover ne vote pas.</span>
-                    </li>
-                    <li>
-                        <strong>Découvrez le résultat et marquez des points</strong>
-                        <span>Si l'Undercover reçoit seul le plus de votes, chaque autre joueur gagne 1 point. Sinon — égalité comprise — l'Undercover gagne 1 point.</span>
-                    </li>
-                    <li>
-                        <strong>Nouvelle manche</strong>
-                        <span>Le chef du salon lance la manche suivante : les mots et le rôle d'Undercover sont redistribués.</span>
-                    </li>
-                </ol>
+            <div id="game-rules-body" class="game-rules-body">
             </div>
         </aside>
 

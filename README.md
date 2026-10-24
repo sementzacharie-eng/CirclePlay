@@ -64,6 +64,10 @@ compte, puis conserve temporairement les 50 derniers messages en mémoire du
 serveur. Les messages et l'historique sont perdus au redémarrage du serveur ;
 ils ne sont pas enregistrés dans la base SQLite.
 
+Les jeux affichent leurs règles dans un panneau séparé. Dans les salons en
+ligne, les blocs de création et de connexion sont côte à côte sur ordinateur et
+empilés sur téléphone.
+
 ## Qui de nous ? en ligne
 
 Depuis **Jeux → En Ligne**, connecte-toi puis crée un salon en choisissant la

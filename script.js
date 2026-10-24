@@ -101,11 +101,109 @@ function fadeMenuContent(content, onComplete) {
     }, 180);
 }
 
+const circlePlayGameRules = {
+    actionTruth: {
+        title: "Action ou Vérité",
+        subtitle: "À plusieurs sur un appareil",
+        items: [
+            ["Préparez la partie", "Entrez les noms de 2 à 6 joueurs. Les noms doivent être différents."],
+            ["Choisissez une difficulté", "Sélectionnez Chill, Soft, Hard ou Extreme selon l'ambiance souhaitée."],
+            ["Choisissez Action ou Vérité", "Le joueur affiché sélectionne l'un des deux choix et réalise le défi ou répond à la question."],
+            ["Passez au tour suivant", "Appuyez sur Suivant pour afficher un nouveau joueur et recommencer."]
+        ]
+    },
+    quiDeNous: {
+        title: "Qui de nous ?",
+        subtitle: "À plusieurs sur un appareil",
+        items: [
+            ["Préparez la partie", "Entrez les noms de 2 à 6 joueurs, puis choisissez une difficulté et un nombre de manches."],
+            ["Lisez la question", "Chaque manche affiche une question commune au groupe."],
+            ["Désignez la personne concernée", "Discutez puis choisissez le joueur qui correspond le mieux à la question."],
+            ["Comptez les points", "Validez votre choix : une réponse peut rapporter 2 points ou en retirer 1. Le classement s'affiche à la fin."]
+        ]
+    },
+    quiDeNousOnline: {
+        title: "Qui de nous ? en ligne",
+        subtitle: "Règles du salon",
+        items: [
+            ["Créez ou rejoignez un salon", "Le chef choisit la difficulté et le nombre de manches. Les autres joueurs rejoignent avec le code à 6 caractères."],
+            ["Lancez la partie", "Le chef peut démarrer dès que deux joueurs sont présents."],
+            ["Répondez chacun de votre côté", "À chaque question, chaque joueur vote pour la personne qui correspond le mieux. Les votes restent cachés."],
+            ["Découvrez le résultat", "Quand tout le monde a voté, les joueurs en tête reçoivent les points de la question. En cas d'égalité, chacun reçoit les points."],
+            ["Continuez jusqu'au classement", "Le chef lance la manche suivante après chaque résultat."]
+        ]
+    },
+    purity: {
+        title: "Test de pureté",
+        subtitle: "Questions personnelles, à une personne",
+        items: [
+            ["Choisissez une difficulté", "Sélectionnez Classique, Hard ou Special Sex."],
+            ["Préparez le profil", "Choisissez le genre demandé par le jeu et saisissez le nom de la personne qui répond."],
+            ["Répondez aux questions", "Répondez Oui ou Non à chaque question. Les réponses Oui ajoutent les points indiqués à leur catégorie."],
+            ["Consultez le résultat", "À la fin, le jeu affiche un pourcentage pour chacune des cinq catégories et un score global."]
+        ]
+    },
+    undercover: {
+        title: "Undercover en ligne",
+        subtitle: "Le déroulement d'une manche",
+        items: [
+            ["Découvrez votre mot — 20 secondes", "Chaque joueur voit son mot secret. Gardez-le pour vous : ne le montrez pas et ne le prononcez pas."],
+            ["Décrivez votre mot — 15 secondes chacun", "Suivez l'ordre des joueurs affiché à l'écran. Donnez un indice qui montre que vous connaissez le mot, sans le révéler directement."],
+            ["Repérez l'Undercover", "L'Undercover reçoit un mot différent, mais lié au même thème. Il doit écouter les autres et improviser pour ne pas se faire repérer."],
+            ["Votez après le tour de table", "Choisissez le joueur que vous soupçonnez. Les choix restent secrets jusqu'à la fin du vote. L'Undercover ne vote pas."],
+            ["Découvrez le résultat et marquez des points", "Si l'Undercover reçoit seul le plus de votes, chaque autre joueur gagne 1 point. Sinon, égalité comprise, l'Undercover gagne 1 point."],
+            ["Nouvelle manche", "Le chef du salon lance la manche suivante : les mots et le rôle d'Undercover sont redistribués."]
+        ]
+    }
+};
+
+let gameRulesCollapsed = window.matchMedia("(max-width: 768px)").matches;
+
+function setGameRulesCollapsed(collapsed) {
+    const panel = document.getElementById("game-rules-panel");
+    const toggle = document.getElementById("game-rules-toggle");
+    if (!panel || !toggle) return;
+
+    panel.classList.toggle("is-collapsed", collapsed);
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.setAttribute("aria-label", collapsed ? "Afficher les règles" : "Réduire les règles");
+    toggle.textContent = collapsed ? "+" : "−";
+}
+
+function showGameRules(gameKey) {
+    const rules = circlePlayGameRules[gameKey];
+    const panel = document.getElementById("game-rules-panel");
+    if (!rules || !panel) return;
+
+    document.getElementById("game-rules-title").textContent = `Règles : ${rules.title}`;
+    document.getElementById("game-rules-subtitle").textContent = rules.subtitle;
+    document.getElementById("game-rules-body").innerHTML = `
+        <ol>${rules.items.map(([heading, explanation]) => `
+            <li><strong>${heading}</strong><span>${explanation}</span></li>
+        `).join("")}</ol>
+    `;
+    panel.setAttribute("aria-label", `Règles du jeu ${rules.title}`);
+    panel.hidden = false;
+    gameRulesCollapsed = window.matchMedia("(max-width: 768px)").matches || gameRulesCollapsed;
+    setGameRulesCollapsed(gameRulesCollapsed);
+}
+
+function hideGameRules() {
+    const panel = document.getElementById("game-rules-panel");
+    if (panel) panel.hidden = true;
+}
+
+document.getElementById("game-rules-toggle")?.addEventListener("click", () => {
+    gameRulesCollapsed = !document.getElementById("game-rules-panel")?.classList.contains("is-collapsed");
+    setGameRulesCollapsed(gameRulesCollapsed);
+});
+
 /* ----------------------------- */
 /* Affiche les entrées principales de l'application. */
 /* ----------------------------- */
 
 function showMainMenu() {
+    hideGameRules();
     fadeMenuContent(`
         <h2>Menu Principal</h2>
         <button onclick="menuDevice()">Jeux 🎮</button>
@@ -358,6 +456,7 @@ function renderSignedInProfile(profileView, user) {
 /* ----------------------------- */
 
 function showProfile(mode = "login") {
+    hideGameRules();
     fadeMenuContent(`
         <div class="auth-view" data-profile-view>
             <div class="auth-avatar" aria-hidden="true">☺</div>
@@ -473,6 +572,7 @@ refreshAccountIndicator();
 /* ----------------------------- */
 
 function menuDevice() {
+    hideGameRules();
     fadeMenuContent(`
         <h2>Choisissez le nombre d'appareils</h2>
         <button onclick="menuGames()">1 Appareil 💻</button>
@@ -488,6 +588,7 @@ function menuDevice() {
 /* ----------------------------- */
 
 function menuGames() {
+    hideGameRules();
     fadeMenuContent(`
         <h2>Choisissez votre jeux</h2>
         <button onclick="ActionVerity()">Action ou Vérité 🎲</button>
@@ -501,6 +602,7 @@ function menuGames() {
 /* Affiche les jeux proposés en mode en ligne. */
 /* ----------------------------- */
 function WanMenuGames() {
+    hideGameRules();
     fadeMenuContent(`
         <h2>Choisissez votre jeux</h2>
         <button onclick="UndercoverEnLigne()">Undercover 🕵️</button>

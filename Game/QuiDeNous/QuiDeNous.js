@@ -16,6 +16,7 @@ let quiDeNousSelectedPlayer = null;
 /* ----------------------------- */
 
 function QuiDeNous() {
+    showGameRules("quiDeNous");
     fadeMenuContent(`
         <h2>Qui de nous ?</h2>
         <button class="suivant-button" id="qdn-suivant-btn" onclick="goToQuiDeNousDifficultyIfReady()" disabled>Suivant</button>

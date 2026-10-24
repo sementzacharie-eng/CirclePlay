@@ -21,6 +21,7 @@ const pureteDifficultyLabels = {
 /* ----------------------------- */
 
 function TestDePurete() {
+    showGameRules("purity");
     fadeMenuContent(`
         <div class="purete-screen">
         <h2>Test de pureté</h2>

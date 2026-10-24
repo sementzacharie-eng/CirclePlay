@@ -1621,6 +1621,9 @@ body {
 }
 
 #menu:has(.qdn-online-view) {
+    width: 30vw;
+    height: 60vh;
+    margin-bottom: 10vh;
     padding-top: 1vh;
 }
 
@@ -1691,6 +1694,33 @@ body {
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1vh;
+}
+
+#menu .qdn-online-view:has(.qdn-online-options) {
+    gap: 0.55vh;
+    padding-bottom: 2vh;
+    overflow-y: hidden;
+}
+
+#menu .qdn-online-options {
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 1vw;
+    width: min(100%, 760px);
+}
+
+#menu .qdn-online-options .qdn-online-create,
+#menu .qdn-online-options .qdn-online-join {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0.7vh 0.8vw;
+}
+
+#menu .qdn-online-options h3 {
+    min-height: 2.5em;
 }
 
 #menu .qdn-online-view label {
@@ -2016,14 +2046,7 @@ body {
     overflow: hidden;
 }
 
-#menu.has-undercover-room {
-    width: min(48vw, 900px);
-    height: 72vh;
-    margin-bottom: 5vh;
-    padding-top: 1vh;
-}
-
-#undercover-rules-panel {
+#game-rules-panel {
     position: fixed;
     top: 50%;
     left: 2vw;
@@ -2043,11 +2066,11 @@ body {
     transform: translateY(-50%);
 }
 
-#undercover-rules-panel[hidden] {
+#game-rules-panel[hidden] {
     display: none;
 }
 
-#undercover-rules-panel .undercover-rules-header {
+#game-rules-panel .game-rules-header {
     display: flex;
     flex-shrink: 0;
     align-items: center;
@@ -2059,20 +2082,20 @@ body {
     box-sizing: border-box;
 }
 
-#undercover-rules-panel .undercover-rules-header h2 {
+#game-rules-panel .game-rules-header h2 {
     margin: 0;
     color: #f5c7d7;
     font-size: clamp(16px, 2vh, 21px);
     line-height: 1.2;
 }
 
-#undercover-rules-panel .undercover-rules-header p {
+#game-rules-panel .game-rules-header p {
     margin: 0.4vh 0 0;
     color: #c3bdc3;
     font-size: clamp(11px, 1.25vh, 13px);
 }
 
-#undercover-rules-panel #undercover-rules-toggle {
+#game-rules-panel #game-rules-toggle {
     display: grid;
     flex-shrink: 0;
     width: 2.6vw;
@@ -2091,19 +2114,19 @@ body {
     animation: none;
 }
 
-#undercover-rules-panel #undercover-rules-toggle:hover {
+#game-rules-panel #game-rules-toggle:hover {
     background: rgba(255, 255, 255, 0.18);
     box-shadow: none;
     transform: none;
 }
 
-#undercover-rules-panel .undercover-rules-body {
+#game-rules-panel .game-rules-body {
     flex: 1;
     padding: 1.2vh 1vw;
     overflow-y: auto;
 }
 
-#undercover-rules-panel .undercover-rules-body ol {
+#game-rules-panel .game-rules-body ol {
     display: flex;
     flex-direction: column;
     gap: 1.5vh;
@@ -2111,21 +2134,38 @@ body {
     padding-left: 1.4em;
 }
 
-#undercover-rules-panel .undercover-rules-body li {
+#game-rules-panel .game-rules-body li {
     padding-left: 0.25em;
     color: rgba(255, 240, 246, 0.88);
     font-size: clamp(12px, 1.35vh, 14px);
     line-height: 1.4;
 }
 
-#undercover-rules-panel .undercover-rules-body li strong,
-#undercover-rules-panel .undercover-rules-body li span {
+#game-rules-panel .game-rules-body li strong,
+#game-rules-panel .game-rules-body li span {
     display: block;
 }
 
-#undercover-rules-panel .undercover-rules-body li strong {
+#game-rules-panel .game-rules-body li strong {
     margin-bottom: 0.35vh;
     color: #fff7b2;
+}
+
+#game-rules-panel.is-collapsed {
+    height: 8vh;
+}
+
+#game-rules-panel.is-collapsed .game-rules-body,
+#game-rules-panel.is-collapsed .game-rules-header p {
+    display: none;
+}
+
+#game-rules-panel.is-collapsed .game-rules-header {
+    min-height: 8vh;
+}
+
+#game-rules-panel.is-collapsed .game-rules-header h2 {
+    font-size: clamp(13px, 1.7vh, 16px);
 }
 
 #menu .undercover-current-speaker {
@@ -2135,13 +2175,29 @@ body {
 }
 
 @media screen and (max-width: 768px) {
-    #menu.has-undercover-room {
-        width: 90vw;
+    #menu:has(.qdn-online-view) {
+        width: 80vw;
         height: 70vh;
-        margin-bottom: 5vh;
+        margin-bottom: 10vh;
     }
 
-    #undercover-rules-panel {
+    #menu .qdn-online-options {
+        display: flex;
+        flex-direction: column;
+        gap: 1vh;
+        width: min(100%, 420px);
+    }
+
+    #menu .qdn-online-view:has(.qdn-online-options) {
+        overflow-y: auto;
+    }
+
+    #menu .qdn-online-options .qdn-online-create,
+    #menu .qdn-online-options .qdn-online-join {
+        padding: 1vh 2vw;
+    }
+
+    #game-rules-panel {
         top: auto;
         right: auto;
         bottom: 3vh;
@@ -2153,40 +2209,28 @@ body {
         transform: none;
     }
 
-    #undercover-rules-panel .undercover-rules-header {
+    #game-rules-panel .game-rules-header {
         min-height: 8vh;
         padding: 0.8vh 2vw;
     }
 
-    #undercover-rules-panel #undercover-rules-toggle {
+    #game-rules-panel #game-rules-toggle {
         width: 9vw;
         height: 4.5vh;
         font-size: 2.5vh;
         border-radius: 2vw;
     }
 
-    #undercover-rules-panel .undercover-rules-body {
+    #game-rules-panel .game-rules-body {
         padding: 1vh 2vw;
     }
 
-    #undercover-rules-panel .undercover-rules-body ol {
+    #game-rules-panel .game-rules-body ol {
         gap: 1vh;
     }
 
-    #undercover-rules-panel.is-collapsed {
+    #game-rules-panel.is-collapsed {
         height: 8vh;
     }
 
-    #undercover-rules-panel.is-collapsed .undercover-rules-body,
-    #undercover-rules-panel.is-collapsed .undercover-rules-header p {
-        display: none;
-    }
-
-    #undercover-rules-panel.is-collapsed .undercover-rules-header {
-        min-height: 8vh;
-    }
-
-    #undercover-rules-panel.is-collapsed .undercover-rules-header h2 {
-        font-size: clamp(13px, 1.7vh, 16px);
-    }
 }

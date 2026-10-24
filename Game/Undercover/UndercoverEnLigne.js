@@ -8,26 +8,6 @@ let undercoverSelectedVoteId = null;
 let undercoverSelectionRound = null;
 let undercoverClock = null;
 
-function setUndercoverRulesCollapsed(collapsed) {
-    const panel = document.getElementById("undercover-rules-panel");
-    const toggle = document.getElementById("undercover-rules-toggle");
-    if (!panel || !toggle) return;
-
-    panel.classList.toggle("is-collapsed", collapsed);
-    toggle.setAttribute("aria-expanded", String(!collapsed));
-    toggle.setAttribute("aria-label", collapsed ? "Afficher les règles" : "Réduire les règles");
-    toggle.textContent = collapsed ? "+" : "−";
-}
-
-document.getElementById("undercover-rules-toggle")?.addEventListener("click", () => {
-    const panel = document.getElementById("undercover-rules-panel");
-    if (panel) setUndercoverRulesCollapsed(!panel.classList.contains("is-collapsed"));
-});
-
-if (window.matchMedia("(max-width: 768px)").matches) {
-    setUndercoverRulesCollapsed(true);
-}
-
 function escapeUndercoverHtml(value) {
     return String(value).replace(/[&<>"']/g, character => ({
         "&": "&amp;",
@@ -109,19 +89,17 @@ function requestUndercover(eventName, payload = null) {
     });
 }
 
-function renderUndercover(content, showRules = false) {
+function renderUndercover(content) {
     const menuContent = document.getElementById("menu-content");
     if (!menuContent) return;
     stopUndercoverClock();
     stopCirclePlaySpeech();
-    const rulesPanel = document.getElementById("undercover-rules-panel");
-    if (rulesPanel) rulesPanel.hidden = !showRules;
-    document.getElementById("menu")?.classList.toggle("has-undercover-room", showRules);
     menuContent.innerHTML = content;
     menuContent.style.opacity = "1";
 }
 
 async function UndercoverEnLigne() {
+    showGameRules("undercover");
     undercoverRoomState = null;
     undercoverNotice = "";
     undercoverSelectedVoteId = null;
@@ -181,6 +159,7 @@ function renderUndercoverHome(message = undercoverNotice) {
         <section class="qdn-online-view undercover-online-view">
             <h2>Undercover en ligne</h2>
             <p class="qdn-online-intro">Découvre ton mot, parle chacun ton tour pendant 15 secondes, puis vote pour trouver l'undercover.</p>
+            <div class="qdn-online-options">
             <form class="qdn-online-create undercover-create">
                 <h3>Créer un salon</h3>
                 <label for="undercover-category">Catégorie</label>
@@ -204,6 +183,7 @@ function renderUndercoverHome(message = undercoverNotice) {
                     pattern="[A-HJ-NP-Z2-9]{6}" autocomplete="off" placeholder="Ex. ABC123" required>
                 <button type="submit">Rejoindre</button>
             </form>
+            </div>
             <p class="qdn-online-status${message ? " is-error" : ""}" role="${message ? "alert" : "status"}">${escapeUndercoverHtml(message)}</p>
             <button class="btn-retour" type="button" data-undercover-back>← Retour</button>
         </section>
@@ -366,7 +346,7 @@ function renderUndercoverRoom(state) {
             <p class="qdn-online-status${undercoverNotice ? " is-error" : ""}" role="${undercoverNotice ? "alert" : "status"}">${escapeUndercoverHtml(undercoverNotice)}</p>
             <button class="btn-retour" type="button" data-undercover-leave>Quitter le salon</button>
         </section>
-    `, true);
+    `);
 
     if (state.status === "word-reveal" || state.status === "speaking") {
         const timer = document.querySelector("[data-undercover-timer]");
