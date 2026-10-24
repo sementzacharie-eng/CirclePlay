@@ -50,7 +50,7 @@ npm start
 ## Comptes disponibles
 
 Depuis **Profil**, chacun peut créer un compte avec un pseudo de 3 à 20 lettres,
-chiffres ou tirets bas et un mot de passe d'au moins 10 caractères. Les mots de
+chiffres ou tirets bas et un mot de passe d'au moins 5 caractères. Les mots de
 passe sont hachés avant stockage ; les comptes et les sessions sont conservés
 dans le dossier local `data/`, qui n'est pas servi au navigateur. Une couleur
 de pseudo est attribuée aléatoirement à l'inscription ; elle peut être changée
@@ -81,8 +81,8 @@ Les salons et les scores sont conservés en mémoire du serveur et disparaissent
 Depuis **Jeux → En Ligne → Undercover**, connecte-toi puis crée un salon avec
 une catégorie et un nombre de manches, ou rejoins un salon avec son code à 6
 caractères. Le chef peut lancer la partie à partir de 3 joueurs. À chaque
-manche, un joueur reçoit un mot différent de celui des autres ; les mots ne
-sont révélés à chaque joueur au début de la manche. Chacun dispose de 20
+manche, un joueur reçoit un mot différent de celui des autres ; chaque joueur
+découvre son mot secret au début de la manche. Chacun dispose de 20
 secondes pour découvrir son mot, puis les joueurs parlent à tour de rôle pendant
 15 secondes chacun sans prononcer leur mot. Après ce tour de table, les joueurs
 votent pour désigner l'undercover ; celui-ci ne peut pas voter. Le vote se

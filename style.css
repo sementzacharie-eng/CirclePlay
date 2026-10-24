@@ -2012,59 +2012,120 @@ body {
     line-height: 1.4;
 }
 
-#menu-content:has(.undercover-room-layout) {
+#menu-content:has(.undercover-online-view) {
     overflow: hidden;
 }
 
-#menu .undercover-room-layout {
-    display: flex;
-    align-items: stretch;
-    gap: 1vw;
-    width: 100%;
-    height: 100%;
-    padding: 1vh 1vw;
-    overflow: hidden;
-    box-sizing: border-box;
+#menu.has-undercover-room {
+    width: min(48vw, 900px);
+    height: 72vh;
+    margin-bottom: 5vh;
+    padding-top: 1vh;
 }
 
-#menu .undercover-rules {
-    flex: 0 0 clamp(190px, 23%, 280px);
-    align-self: stretch;
-    padding: 1.5vh 1vw;
-    overflow-y: auto;
-    color: rgba(255, 240, 246, 0.9);
-    text-align: left;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 1vh;
-    box-sizing: border-box;
-}
-
-#menu .undercover-rules h2 {
-    margin: 0.5vh 0 1.5vh;
-    color: #fff7b2;
-    font-size: clamp(17px, 2.3vh, 23px);
-}
-
-#menu .undercover-rules ol {
+#undercover-rules-panel {
+    position: fixed;
+    top: 50%;
+    left: 2vw;
+    z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: 1.2vh;
+    width: min(22vw, 340px);
+    min-width: 180px;
+    height: min(72vh, 700px);
+    overflow: hidden;
+    color: #f7f3f5;
+    background: linear-gradient(145deg, #39363a, #29272b);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.2vw;
+    box-shadow: 0 1.2vh 3vh rgba(37, 25, 34, 0.3);
+    box-sizing: border-box;
+    transform: translateY(-50%);
+}
+
+#undercover-rules-panel[hidden] {
+    display: none;
+}
+
+#undercover-rules-panel .undercover-rules-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 8vh;
+    padding: 1vh 1vw;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+}
+
+#undercover-rules-panel .undercover-rules-header h2 {
     margin: 0;
-    padding-left: 1.5em;
+    color: #f5c7d7;
+    font-size: clamp(16px, 2vh, 21px);
+    line-height: 1.2;
 }
 
-#menu .undercover-rules li {
-    padding-left: 0.2em;
-    font-size: clamp(12px, 1.5vh, 15px);
-    line-height: 1.45;
+#undercover-rules-panel .undercover-rules-header p {
+    margin: 0.4vh 0 0;
+    color: #c3bdc3;
+    font-size: clamp(11px, 1.25vh, 13px);
 }
 
-#menu .undercover-room-layout > .undercover-online-view {
-    flex: 1 1 0;
-    width: auto;
-    min-width: 0;
-    padding: 1vh 1vw 9vh;
+#undercover-rules-panel #undercover-rules-toggle {
+    display: grid;
+    flex-shrink: 0;
+    width: 2.6vw;
+    min-width: 34px;
+    height: 4.2vh;
+    min-height: 34px;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    font-size: 2.2vh;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 0;
+    border-radius: 0.65vw;
+    box-shadow: none;
+    animation: none;
+}
+
+#undercover-rules-panel #undercover-rules-toggle:hover {
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    transform: none;
+}
+
+#undercover-rules-panel .undercover-rules-body {
+    flex: 1;
+    padding: 1.2vh 1vw;
+    overflow-y: auto;
+}
+
+#undercover-rules-panel .undercover-rules-body ol {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5vh;
+    margin: 0;
+    padding-left: 1.4em;
+}
+
+#undercover-rules-panel .undercover-rules-body li {
+    padding-left: 0.25em;
+    color: rgba(255, 240, 246, 0.88);
+    font-size: clamp(12px, 1.35vh, 14px);
+    line-height: 1.4;
+}
+
+#undercover-rules-panel .undercover-rules-body li strong,
+#undercover-rules-panel .undercover-rules-body li span {
+    display: block;
+}
+
+#undercover-rules-panel .undercover-rules-body li strong {
+    margin-bottom: 0.35vh;
+    color: #fff7b2;
 }
 
 #menu .undercover-current-speaker {
@@ -2074,29 +2135,58 @@ body {
 }
 
 @media screen and (max-width: 768px) {
-    #menu .undercover-room-layout {
-        flex-direction: column;
+    #menu.has-undercover-room {
+        width: 90vw;
+        height: 70vh;
+        margin-bottom: 5vh;
+    }
+
+    #undercover-rules-panel {
+        top: auto;
+        right: auto;
+        bottom: 3vh;
+        left: 3vw;
+        width: min(44vw, 300px);
+        height: 52vh;
+        max-height: 52vh;
+        border-radius: 3vw;
+        transform: none;
+    }
+
+    #undercover-rules-panel .undercover-rules-header {
+        min-height: 8vh;
+        padding: 0.8vh 2vw;
+    }
+
+    #undercover-rules-panel #undercover-rules-toggle {
+        width: 9vw;
+        height: 4.5vh;
+        font-size: 2.5vh;
+        border-radius: 2vw;
+    }
+
+    #undercover-rules-panel .undercover-rules-body {
+        padding: 1vh 2vw;
+    }
+
+    #undercover-rules-panel .undercover-rules-body ol {
         gap: 1vh;
-        overflow-y: auto;
     }
 
-    #menu .undercover-rules {
-        flex: 0 0 auto;
-        max-height: 23vh;
-        padding: 1vh 3vw;
+    #undercover-rules-panel.is-collapsed {
+        height: 8vh;
     }
 
-    #menu .undercover-rules h2 {
-        margin: 0.2vh 0 0.7vh;
+    #undercover-rules-panel.is-collapsed .undercover-rules-body,
+    #undercover-rules-panel.is-collapsed .undercover-rules-header p {
+        display: none;
     }
 
-    #menu .undercover-rules ol {
-        gap: 0.6vh;
+    #undercover-rules-panel.is-collapsed .undercover-rules-header {
+        min-height: 8vh;
     }
 
-    #menu .undercover-room-layout > .undercover-online-view {
-        flex: 1 0 auto;
-        min-height: 55vh;
-        overflow-y: visible;
+    #undercover-rules-panel.is-collapsed .undercover-rules-header h2 {
+        font-size: clamp(13px, 1.7vh, 16px);
     }
 }

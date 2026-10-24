@@ -137,8 +137,6 @@ function ActionVerityDiff() {
             <button class="btn2" onclick="ActionVeritySoft()">SOFT 😎</button>
             <button class="btn3" onclick="ActionVerityHard()">HARD 😈</button>
             <button class="btn4" onclick="ActionVerityExtreme()">EXTREME 🔞</button>
-            <button class="btn5" onclick="ActionVerityLove()">LOVE 💕</button>
-            <button class="btn6" onclick="ActionVerityMuscu()">COMPÉTITION 💪</button>
         </div>
         <button class="btn-retour" onclick="ActionVerity()">← Retour</button>
     `);

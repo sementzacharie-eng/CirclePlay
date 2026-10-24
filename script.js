@@ -408,7 +408,7 @@ function renderProfileForm(profileView, mode, message = "") {
             <input id="auth-username" name="username" type="text" minlength="3" maxlength="20"
                 pattern="[A-Za-z0-9_]{3,20}" autocomplete="username" placeholder="Ton pseudo" required>
             <label for="auth-password">Mot de passe</label>
-            <input id="auth-password" name="password" type="password" minlength="10"
+            <input id="auth-password" name="password" type="password"${isRegistering ? ' minlength="5"' : ""}
                 autocomplete="${isRegistering ? "new-password" : "current-password"}" placeholder="Ton mot de passe" required>
             <button class="auth-submit" type="submit">${isRegistering ? "Créer mon compte" : "Se connecter"}</button>
         </form>
@@ -490,7 +490,7 @@ function menuDevice() {
 function menuGames() {
     fadeMenuContent(`
         <h2>Choisissez votre jeux</h2>
-        <button onclick="UndercoverEnLigne()">Undercover 🕵️</button>
+        <button onclick="ActionVerity()">Action ou Vérité 🎲</button>
         <button onclick="QuiDeNous()">Qui de nous ? 👥</button>
         <button onclick="TestDePurete()">Test de Pureté ⚖️</button>
         <button class="btn-retour" onclick="menuDevice()">← Retour</button>

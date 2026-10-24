@@ -190,8 +190,8 @@ function validateCredentials(username, password) {
     if (typeof username !== "string" || !/^[A-Za-z0-9_]{3,20}$/.test(username)) {
         return "Le pseudo doit contenir de 3 à 20 lettres, chiffres ou tirets bas.";
     }
-    if (typeof password !== "string" || password.length < 10) {
-        return "Le mot de passe doit contenir au moins 10 caractères.";
+    if (typeof password !== "string" || password.length < 5) {
+        return "Le mot de passe doit contenir au moins 5 caractères.";
     }
     if (Buffer.byteLength(password, "utf8") > 72) {
         return "Le mot de passe ne doit pas dépasser 72 octets.";
