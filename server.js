@@ -54,9 +54,9 @@ const adminPassword = process.env.CIRCLEPLAY_ADMIN_PASSWORD;
 if (isProduction && !process.env.SESSION_SECRET) {
     throw new Error("La variable SESSION_SECRET est obligatoire en production.");
 }
-if (typeof adminPassword !== "string" || Buffer.byteLength(adminPassword, "utf8") < 12 ||
+if (typeof adminPassword !== "string" || adminPassword.length === 0 ||
     Buffer.byteLength(adminPassword, "utf8") > 72) {
-    throw new Error("Configure CIRCLEPLAY_ADMIN_PASSWORD avec 12 à 72 octets avant de démarrer.");
+    throw new Error("Configure CIRCLEPLAY_ADMIN_PASSWORD avec un mot de passe de 1 à 72 octets avant de démarrer.");
 }
 
 fs.mkdirSync(dataDirectory, { recursive: true });

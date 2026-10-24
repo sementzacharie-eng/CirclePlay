@@ -36,11 +36,13 @@ démarre le serveur :
 npm start
 ```
 
-Configure aussi `CIRCLEPLAY_ADMIN_PASSWORD` dans `.env` avec un mot de passe
-unique de 12 à 72 octets pour créer le compte `admin` au démarrage. Le compte
-administrateur dispose d'un tableau de bord pour consulter les sessions actives,
-voir les pseudos des comptes amis et déconnecter une session. Les mots de passe
-ne sont jamais consultables ; ils ne sont conservés que sous forme de hachage.
+Configure aussi `CIRCLEPLAY_ADMIN_PASSWORD` dans `.env` (la valeur `admin` est
+acceptée) pour créer le compte administrateur au démarrage. Le mot de passe doit
+contenir de 1 à 72 octets. Le compte administrateur dispose d'un tableau de bord
+pour consulter les sessions actives, voir les pseudos des comptes amis et
+déconnecter une session. Les mots de passe ne sont jamais consultables ; ils ne
+sont conservés que sous forme de hachage. Pour un service public, choisis un mot
+de passe long et unique plutôt que `admin`.
 Sur Render, ajoute `CIRCLEPLAY_ADMIN_PASSWORD` dans **Dashboard → ton service →
 Environment → Environment Variables**, puis redéploie le service.
 
