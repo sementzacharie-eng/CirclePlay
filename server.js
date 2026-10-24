@@ -65,7 +65,14 @@ database.exec(`
         password_hash TEXT NOT NULL,
         username_color TEXT NOT NULL DEFAULT '#f5c7d7',
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
+    );
+    CREATE TABLE IF NOT EXISTS active_account_sessions (
+        user_id INTEGER PRIMARY KEY,
+        sid TEXT NOT NULL UNIQUE
+    );
+    CREATE TABLE IF NOT EXISTS app_migrations (
+        name TEXT PRIMARY KEY
+    );
 `);
 const userColumns = database.prepare("PRAGMA table_info(users)").all();
 if (!userColumns.some(column => column.name === "username_color")) {
@@ -146,6 +153,7 @@ class SqliteSessionStore extends session.Store {
     }
 }
 
+const sessionStore = new SqliteSessionStore(database);
 const findUserByUsername = database.prepare(
     "SELECT id, username, password_hash, username_color FROM users WHERE username = ? COLLATE NOCASE"
 );
@@ -158,6 +166,44 @@ const updateUsernameColor = database.prepare(
 const createUser = database.prepare(
     "INSERT INTO users (username, password_hash, username_color) VALUES (?, ?, ?)"
 );
+const updateUserPassword = database.prepare(
+    "UPDATE users SET password_hash = ? WHERE id = ?"
+);
+const findActiveAccountSession = database.prepare(
+    "SELECT sid FROM active_account_sessions WHERE user_id = ?"
+);
+const replaceActiveAccountSession = database.prepare(`
+    INSERT INTO active_account_sessions (user_id, sid) VALUES (?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET sid = excluded.sid
+`);
+const deleteActiveAccountSession = database.prepare(
+    "DELETE FROM active_account_sessions WHERE user_id = ? AND sid = ?"
+);
+const deleteStoredSession = database.prepare("DELETE FROM sessions WHERE sid = ?");
+const hasMigration = database.prepare("SELECT 1 FROM app_migrations WHERE name = ?");
+const recordMigration = database.prepare("INSERT INTO app_migrations (name) VALUES (?)");
+
+const defaultAccountNames = ["Zacharie", "Ilan", "Allan", "Nina", "Nathan", "Julia"];
+const seedDefaultAccounts = database.transaction(() => {
+    const migrationName = "seed-default-accounts-v1";
+    if (hasMigration.get(migrationName)) return;
+
+    for (const username of defaultAccountNames) {
+        const passwordHash = bcrypt.hashSync("1234", 12);
+        const existingUser = findUserByUsername.get(username);
+        if (existingUser) {
+            updateUserPassword.run(passwordHash, existingUser.id);
+        } else {
+            createUser.run(
+                username,
+                passwordHash,
+                usernameColors[crypto.randomInt(usernameColors.length)]
+            );
+        }
+    }
+    recordMigration.run(migrationName);
+});
+seedDefaultAccounts();
 
 app.disable("x-powered-by");
 if (isProduction) app.set("trust proxy", 1);
@@ -169,7 +215,7 @@ const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex"),
     resave: false,
     saveUninitialized: false,
-    store: new SqliteSessionStore(database),
+    store: sessionStore,
     cookie: {
         httpOnly: true,
         sameSite: "lax",
@@ -212,9 +258,41 @@ function saveSession(req) {
     });
 }
 
+async function activateAccountSession(req, userId) {
+    const previousSessionId = findActiveAccountSession.get(userId)?.sid;
+    req.session.userId = userId;
+    await saveSession(req);
+
+    database.transaction(() => {
+        replaceActiveAccountSession.run(userId, req.sessionID);
+        if (previousSessionId && previousSessionId !== req.sessionID) {
+            deleteStoredSession.run(previousSessionId);
+        }
+    })();
+
+    if (previousSessionId && previousSessionId !== req.sessionID) {
+        const previousSockets = Array.from(io.sockets.sockets.values())
+            .filter(socket => socket.data.sessionId === previousSessionId);
+        for (const previousSocket of previousSockets) {
+            previousSocket.emit("account:session-replaced", () => {
+                previousSocket.disconnect(true);
+            });
+        }
+        if (previousSockets.length > 0) {
+            const disconnectFallback = setTimeout(() => {
+                for (const previousSocket of previousSockets) {
+                    if (previousSocket.connected) previousSocket.disconnect(true);
+                }
+            }, 1000);
+            disconnectFallback.unref();
+        }
+    }
+}
+
 app.get("/api/auth/me", (req, res, next) => {
     try {
-        const user = req.session.userId
+        const user = req.session.userId &&
+            findActiveAccountSession.get(req.session.userId)?.sid === req.sessionID
             ? findUserById.get(req.session.userId)
             : null;
         res.json({
@@ -239,8 +317,7 @@ app.post("/api/auth/register", authRateLimit, async (req, res, next) => {
         const usernameColor = usernameColors[crypto.randomInt(usernameColors.length)];
         const result = createUser.run(username, passwordHash, usernameColor);
         await regenerateSession(req);
-        req.session.userId = Number(result.lastInsertRowid);
-        await saveSession(req);
+        await activateAccountSession(req, Number(result.lastInsertRowid));
         res.status(201).json({
             user: {
                 id: Number(result.lastInsertRowid),
@@ -270,10 +347,8 @@ app.post("/api/auth/login", authRateLimit, async (req, res, next) => {
         if (!passwordMatches) {
             return res.status(401).json({ error: "Pseudo ou mot de passe incorrect." });
         }
-
         await regenerateSession(req);
-        req.session.userId = user.id;
-        await saveSession(req);
+        await activateAccountSession(req, user.id);
         res.json({
             user: {
                 id: user.id,
@@ -291,7 +366,8 @@ app.post("/api/profile/color", (req, res, next) => {
     if (typeof color !== "string" || !usernameColors.includes(color.toLowerCase())) {
         return res.status(400).json({ error: "Choisis une couleur valide." });
     }
-    if (!req.session.userId) {
+    if (!req.session.userId ||
+        findActiveAccountSession.get(req.session.userId)?.sid !== req.sessionID) {
         return res.status(401).json({ error: "Connecte-toi pour modifier ton profil." });
     }
 
@@ -326,8 +402,10 @@ app.post("/api/profile/color", (req, res, next) => {
 
 app.post("/api/auth/logout", (req, res, next) => {
     const sessionId = req.sessionID;
+    const userId = req.session.userId;
     req.session.destroy(error => {
         if (error) return next(error);
+        if (userId) deleteActiveAccountSession.run(userId, sessionId);
         for (const socket of io.sockets.sockets.values()) {
             if (socket.data.sessionId === sessionId) socket.disconnect(true);
         }
@@ -341,7 +419,8 @@ app.post("/api/auth/logout", (req, res, next) => {
 });
 
 app.get("/api/undercover/categories", (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session.userId ||
+        findActiveAccountSession.get(req.session.userId)?.sid !== req.sessionID) {
         return res.status(401).json({ error: "Connecte-toi pour voir les catégories." });
     }
     res.json({ categories: Object.keys(undercoverCategories) });
@@ -376,10 +455,19 @@ io.engine.use(sessionMiddleware);
 io.use((socket, next) => {
     const userId = socket.request.session && socket.request.session.userId;
     const user = userId ? findUserById.get(userId) : null;
-    if (!user) return next(new Error("AUTH_REQUIRED"));
+    if (!user || findActiveAccountSession.get(userId)?.sid !== socket.request.sessionID) {
+        return next(new Error("AUTH_REQUIRED"));
+    }
 
     socket.data.user = user;
     socket.data.sessionId = socket.request.sessionID;
+    socket.use((_packet, next) => {
+        if (findActiveAccountSession.get(userId)?.sid !== socket.data.sessionId) {
+            socket.disconnect(true);
+            return;
+        }
+        next();
+    });
     next();
 });
 

@@ -102,6 +102,45 @@ body {
     border-radius: 999px;
 }
 
+#account-indicator.is-friend-account {
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    width: fit-content;
+    margin-bottom: 1.2vh;
+    padding: 0.3vh 0.9vw;
+    border: 1px solid transparent;
+    background:
+        linear-gradient(#30252f, #30252f) padding-box,
+        linear-gradient(100deg, #ff6bcb, #feca57, #1dd1a1, #54a0ff, #c56cf0) border-box;
+    box-shadow: 0 3px 14px rgba(129, 79, 148, 0.22);
+}
+
+#account-indicator.is-friend-account::before {
+    display: none;
+}
+
+.friend-account-label {
+    color: transparent;
+    font-size: 0.9em;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(100deg, #ff8bd8, #ffe18a, #77e5bd, #91baff, #d99aff);
+    background-clip: text;
+    -webkit-background-clip: text;
+}
+
+.friend-account-name {
+    padding: 0.12em 0.65em;
+    color: #30252f;
+    font-size: 0.9em;
+    font-weight: 800;
+    background: linear-gradient(110deg, #ffd0ec, #fff0bd, #c7f4df, #d6e5ff);
+    border-radius: 999px;
+}
+
 #account-indicator::before {
     display: inline-block;
     width: 0.65em;

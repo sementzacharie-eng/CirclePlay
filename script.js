@@ -5,6 +5,14 @@
 let circlePlayVoiceEnabled = true;
 let circlePlayCurrentSpeechText = "";
 let circlePlayCurrentUser = null;
+const circlePlayFriendAccountNames = new Set([
+    "zacharie",
+    "ilan",
+    "allan",
+    "nina",
+    "nathan",
+    "julia"
+]);
 const circlePlayUsernameColors = [
     { value: "#ff6b6b", name: "Rouge corail" },
     { value: "#ff9f43", name: "Orange" },
@@ -217,14 +225,27 @@ function setAccountIndicator(user) {
     const indicator = document.getElementById("account-indicator");
     if (indicator) {
         indicator.replaceChildren();
+        const isFriendAccount = user &&
+            circlePlayFriendAccountNames.has(user.username.toLocaleLowerCase("fr"));
+        indicator.classList.toggle("is-friend-account", Boolean(isFriendAccount));
         if (user) {
-            indicator.append("Connecté en tant que ");
-            const username = document.createElement("strong");
-            username.textContent = user.username;
-            if (/^#[0-9a-f]{6}$/i.test(user.usernameColor || "")) {
-                username.style.color = user.usernameColor;
+            if (isFriendAccount) {
+                const label = document.createElement("span");
+                label.className = "friend-account-label";
+                label.textContent = "Compte d’ami";
+                const username = document.createElement("strong");
+                username.className = "friend-account-name";
+                username.textContent = user.username;
+                indicator.append(label, username);
+            } else {
+                indicator.append("Connecté en tant que ");
+                const username = document.createElement("strong");
+                username.textContent = user.username;
+                if (/^#[0-9a-f]{6}$/i.test(user.usernameColor || "")) {
+                    username.style.color = user.usernameColor;
+                }
+                indicator.appendChild(username);
             }
-            indicator.appendChild(username);
         }
         indicator.hidden = !user;
     }
@@ -352,6 +373,12 @@ function setGlobalChatAccount(user) {
     const presence = document.getElementById("chat-presence");
     const form = document.getElementById("chat-form");
     const input = document.getElementById("chat-input");
+
+    socket.on("account:session-replaced", acknowledge => {
+        if (typeof acknowledge === "function") acknowledge();
+        setAccountIndicator(null);
+        window.alert("Ce compte a été connecté sur un autre appareil. Cette session a été fermée.");
+    });
     const toggle = document.getElementById("chat-toggle");
 
     if (window.matchMedia("(max-width: 768px)").matches) {

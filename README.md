@@ -55,6 +55,11 @@ passe sont hachés avant stockage ; les comptes et les sessions sont conservés
 dans le dossier local `data/`, qui n'est pas servi au navigateur. Une couleur
 de pseudo est attribuée aléatoirement à l'inscription ; elle peut être changée
 parmi 10 couleurs proposées dans le profil et s'affiche dans le chat global.
+Les comptes **Zacharie**, **Ilan**, **Allan**, **Nina**, **Nathan** et **Julia**
+sont créés automatiquement au premier démarrage, chacun avec le mot de passe
+`1234`. Un seul appareil peut être connecté à un compte à la fois : une nouvelle
+connexion ferme la session précédente. N'expose pas ces identifiants par défaut
+sur un serveur public.
 
 ## Chat global
 
