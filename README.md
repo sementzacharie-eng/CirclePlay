@@ -82,9 +82,12 @@ Depuis **Jeux → En Ligne → Undercover**, connecte-toi puis crée un salon av
 une catégorie et un nombre de manches, ou rejoins un salon avec son code à 6
 caractères. Le chef peut lancer la partie à partir de 3 joueurs. À chaque
 manche, un joueur reçoit un mot différent de celui des autres ; les mots ne
-sont révélés qu'à la fin du vote. Les joueurs ont 3 minutes pour désigner
-l'undercover ; celui-ci ne peut pas voter. Le vote se termine plus tôt si tous
-les joueurs autorisés ont voté. Le chef lance ensuite la manche suivante.
+sont révélés à chaque joueur au début de la manche. Chacun dispose de 20
+secondes pour découvrir son mot, puis les joueurs parlent à tour de rôle pendant
+15 secondes chacun sans prononcer leur mot. Après ce tour de table, les joueurs
+votent pour désigner l'undercover ; celui-ci ne peut pas voter. Le vote se
+termine lorsque tous les joueurs autorisés ont voté. Les règles restent visibles
+dans un panneau à gauche du salon. Le chef lance ensuite la manche suivante.
 
 Les paires de mots sont personnalisables dans
 [`data/undercover-categories.js`](./data/undercover-categories.js). Ajoute ou

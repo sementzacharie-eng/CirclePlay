@@ -157,7 +157,7 @@ function renderUndercoverHome(message = undercoverNotice) {
     renderUndercover(`
         <section class="qdn-online-view undercover-online-view">
             <h2>Undercover en ligne</h2>
-            <p class="qdn-online-intro">Trouve l'undercover avant la fin du vote ! Chaque manche dure au maximum 3 minutes.</p>
+            <p class="qdn-online-intro">Découvre ton mot, parle chacun ton tour pendant 15 secondes, puis vote pour trouver l'undercover.</p>
             <form class="qdn-online-create undercover-create">
                 <h3>Créer un salon</h3>
                 <label for="undercover-category">Catégorie</label>
@@ -246,6 +246,35 @@ function renderUndercoverRoom(state) {
             </div>
             ${isHost ? `<button type="button" data-undercover-start${state.players.length < 3 ? " disabled" : ""}>Commencer la partie</button>` : ""}
         `;
+    } else if (state.status === "word-reveal") {
+        body = `
+            <p class="qdn-online-round">Manche ${state.round} / ${state.rounds} · ${escapeUndercoverHtml(state.category)}</p>
+            <div class="undercover-word-card">
+                <span>${state.isUndercover ? "Ton mot secret" : "Ton mot"}</span>
+                <strong>${escapeUndercoverHtml(state.word)}</strong>
+                <small>${state.isUndercover ? "Tu es l'undercover : observe les mots des autres." : "Mémorise ton mot sans le révéler."}</small>
+            </div>
+            <p class="undercover-timer" data-undercover-timer data-ends-at="${state.endsAt}">${state.remainingSeconds}s</p>
+            <p class="qdn-online-hint">La partie commence dans ${state.remainingSeconds} secondes. Prépare ta description sans dire ton mot.</p>
+        `;
+    } else if (state.status === "speaking") {
+        const currentSpeaker = state.players.find(player => player.id === state.currentSpeakerId);
+        const speakerName = currentSpeaker ? escapeUndercoverHtml(currentSpeaker.username) : "Joueur";
+        const isCurrentSpeaker = state.currentSpeakerId === currentUserId;
+        body = `
+            <p class="qdn-online-round">Manche ${state.round} / ${state.rounds} · Tour ${state.turnNumber} / ${state.turnCount}</p>
+            <div class="undercover-word-card">
+                <span>${state.isUndercover ? "Ton mot secret" : "Ton mot"}</span>
+                <strong>${escapeUndercoverHtml(state.word)}</strong>
+                <small>${state.isUndercover ? "Tu es l'undercover : reste discret et devine le mot commun." : "Décris ton mot sans le révéler."}</small>
+            </div>
+            <p class="undercover-current-speaker">${isCurrentSpeaker ? "C'est ton tour de parler !" : `Au tour de ${speakerName} de parler.`}</p>
+            <p class="undercover-timer" data-undercover-timer data-ends-at="${state.endsAt}">${state.remainingSeconds}s</p>
+            <p class="qdn-online-hint">${isCurrentSpeaker
+                ? "Tu as 15 secondes. Décris ton mot sans le prononcer."
+                : "Écoute attentivement : chaque joueur a 15 secondes pour parler."
+            }</p>
+        `;
     } else if (state.status === "voting") {
         const voteButtons = state.players.map(player => `
             <button class="qdn-online-player" type="button" data-undercover-vote="${player.id}"
@@ -259,13 +288,12 @@ function renderUndercoverRoom(state) {
             <div class="undercover-word-card">
                 <span>${state.isUndercover ? "Ton mot secret" : "Ton mot"}</span>
                 <strong>${escapeUndercoverHtml(state.word)}</strong>
-                <small>${state.isUndercover ? "Tu es l'undercover : tu ne peux pas voter." : "Décris ton mot sans le révéler."}</small>
+                <small>${state.isUndercover ? "Tu es l'undercover : tu ne peux pas voter." : "Le tour de parole est terminé, choisis l'undercover."}</small>
             </div>
-            <p class="undercover-timer" data-undercover-timer data-ends-at="${state.endsAt}">${Math.floor(state.remainingSeconds / 60)}:${String(state.remainingSeconds % 60).padStart(2, "0")}</p>
             <p class="qdn-online-hint">${state.isUndercover
                 ? "Observe les autres et essaie de rester discret."
                 : state.hasVoted
-                    ? "Ton vote est enregistré. Attends les autres joueurs ou la fin du chrono."
+                    ? "Ton vote est enregistré. Attends les autres joueurs."
                     : "Choisis la personne que tu penses être l'undercover."
             }</p>
             ${state.isUndercover ? "" : `<div class="qdn-online-vote-grid">${voteButtons}</div>`}
@@ -307,22 +335,34 @@ function renderUndercoverRoom(state) {
     }
 
     renderUndercover(`
-        <section class="qdn-online-view undercover-online-view">
-            <h2>Salon ${escapeUndercoverHtml(state.code)}</h2>
-            ${body}
-            <h3 class="qdn-online-player-heading">Joueurs du salon</h3>
-            <ol class="qdn-online-players qdn-online-room-players">${roomPlayerList}</ol>
-            <p class="qdn-online-status${undercoverNotice ? " is-error" : ""}" role="${undercoverNotice ? "alert" : "status"}">${escapeUndercoverHtml(undercoverNotice)}</p>
-            <button class="btn-retour" type="button" data-undercover-leave>Quitter le salon</button>
-        </section>
+        <div class="undercover-room-layout">
+            <aside class="undercover-rules" aria-label="Règles du jeu Undercover">
+                <h2>Règles du jeu</h2>
+                <ol>
+                    <li>Chaque joueur découvre son mot pendant 20 secondes.</li>
+                    <li>À tour de rôle, chacun a 15 secondes pour décrire son mot sans le prononcer.</li>
+                    <li>L'undercover a un mot différent et doit rester discret.</li>
+                    <li>Après le tour de table, votez pour la personne que vous soupçonnez.</li>
+                    <li>Les joueurs trouvent l'undercover : un point chacun. Sinon, l'undercover marque un point.</li>
+                </ol>
+            </aside>
+            <section class="qdn-online-view undercover-online-view">
+                <h2>Salon ${escapeUndercoverHtml(state.code)}</h2>
+                ${body}
+                <h3 class="qdn-online-player-heading">Joueurs du salon</h3>
+                <ol class="qdn-online-players qdn-online-room-players">${roomPlayerList}</ol>
+                <p class="qdn-online-status${undercoverNotice ? " is-error" : ""}" role="${undercoverNotice ? "alert" : "status"}">${escapeUndercoverHtml(undercoverNotice)}</p>
+                <button class="btn-retour" type="button" data-undercover-leave>Quitter le salon</button>
+            </section>
+        </div>
     `);
 
-    if (state.status === "voting") {
+    if (state.status === "word-reveal" || state.status === "speaking") {
         const timer = document.querySelector("[data-undercover-timer]");
         undercoverClock = setInterval(() => {
             if (!timer?.isConnected) return stopUndercoverClock();
             const remaining = Math.max(0, Math.ceil((Number(timer.dataset.endsAt) - Date.now()) / 1000));
-            timer.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
+            timer.textContent = `${remaining}s`;
         }, 250);
     }
     document.querySelector("[data-undercover-copy]")?.addEventListener("click", async () => {

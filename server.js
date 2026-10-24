@@ -21,7 +21,8 @@ const qdnQuestions = {
 const undercoverCategories = require("./data/undercover-categories");
 const qdnRoundChoices = [10, 20, 30, 40, 50];
 const qdnRoomCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const undercoverVoteDurationMs = 3 * 60 * 1000;
+const undercoverWordRevealDurationMs = 20 * 1000;
+const undercoverTurnDurationMs = 15 * 1000;
 for (const [category, pairs] of Object.entries(undercoverCategories)) {
     if (!category.trim() || !Array.isArray(pairs) || pairs.length === 0 ||
         pairs.some(pair => !pair || typeof pair.normal !== "string" ||
@@ -530,9 +531,14 @@ function getUndercoverRoomState(room, player) {
         status: room.status,
         round: room.round,
         endsAt: room.endsAt,
-        remainingSeconds: room.status === "voting"
+        remainingSeconds: room.endsAt
             ? Math.max(0, Math.ceil((room.endsAt - Date.now()) / 1000))
             : 0,
+        currentSpeakerId: room.status === "speaking"
+            ? room.turnOrder[room.turnIndex]
+            : null,
+        turnNumber: room.status === "speaking" ? room.turnIndex + 1 : 0,
+        turnCount: room.turnOrder.length,
         players: Array.from(room.players.values(), member => ({
             id: member.userId,
             username: member.username,
@@ -629,14 +635,101 @@ function startUndercoverRound(room) {
     room.votes.clear();
     room.reveal = null;
     room.notice = "";
-    room.status = "voting";
-    room.endsAt = Date.now() + undercoverVoteDurationMs;
+    room.status = "word-reveal";
+    room.endsAt = Date.now() + undercoverWordRevealDurationMs;
+    room.turnOrder = players.map(player => player.userId);
+    room.turnIndex = -1;
     players.forEach((player, index) => {
         player.isUndercover = index === undercoverIndex;
         player.word = player.isUndercover ? pair.undercover : pair.normal;
     });
     clearUndercoverTimer(room);
-    room.timer = setTimeout(() => revealUndercoverRound(room), undercoverVoteDurationMs);
+    room.timer = setTimeout(() => startUndercoverTurns(room), undercoverWordRevealDurationMs);
+}
+
+function startUndercoverTurns(room) {
+    if (room.status !== "word-reveal") return;
+    room.status = "speaking";
+    room.turnIndex = 0;
+    startUndercoverTurn(room);
+}
+
+function startUndercoverTurn(room) {
+    if (room.status !== "speaking") return;
+    if (room.turnIndex >= room.turnOrder.length) {
+        room.status = "voting";
+        room.endsAt = null;
+        clearUndercoverTimer(room);
+        broadcastUndercoverRoom(room);
+        return;
+    }
+    room.endsAt = Date.now() + undercoverTurnDurationMs;
+    clearUndercoverTimer(room);
+    room.timer = setTimeout(() => advanceUndercoverTurn(room), undercoverTurnDurationMs);
+    broadcastUndercoverRoom(room);
+}
+
+function advanceUndercoverTurn(room) {
+    if (room.status !== "speaking") return;
+    room.turnIndex++;
+    startUndercoverTurn(room);
+}
+
+function resetUndercoverRound(room, notice) {
+    clearUndercoverTimer(room);
+    room.status = "lobby";
+    room.round = 0;
+    room.endsAt = null;
+    room.turnOrder = [];
+    room.turnIndex = -1;
+    room.votes.clear();
+    room.reveal = null;
+    room.players.forEach(member => {
+        member.isUndercover = false;
+        member.word = "";
+    });
+    room.notice = notice;
+    broadcastUndercoverRoom(room);
+}
+
+function handleUndercoverPlayerRemoved(room, player) {
+    for (const [voterId, targetId] of room.votes) {
+        if (targetId === player.userId) room.votes.delete(voterId);
+    }
+    if (room.status === "word-reveal" || room.status === "speaking" || room.status === "voting") {
+        if (player.isUndercover || room.players.size < 3) {
+            resetUndercoverRound(
+                room,
+                player.isUndercover
+                    ? "L'undercover a quitté le salon. La partie est revenue au salon."
+                    : "Il faut au moins 3 joueurs. La partie est revenue au salon."
+            );
+            return;
+        }
+    }
+
+    if (room.status === "speaking") {
+        const removedTurnIndex = room.turnOrder.indexOf(player.userId);
+        if (removedTurnIndex !== -1) {
+            room.turnOrder.splice(removedTurnIndex, 1);
+            if (removedTurnIndex < room.turnIndex) {
+                room.turnIndex--;
+            } else if (removedTurnIndex === room.turnIndex) {
+                clearUndercoverTimer(room);
+                startUndercoverTurn(room);
+                return;
+            }
+        }
+    } else if (room.status === "word-reveal") {
+        room.turnOrder = room.turnOrder.filter(userId => userId !== player.userId);
+    }
+
+    room.notice = "";
+    if (room.status === "voting") {
+        completeUndercoverVoting(room);
+    } else {
+        broadcastUndercoverRoom(room);
+    }
 }
 
 function leaveUndercoverRoom(socket) {
@@ -661,29 +754,7 @@ function leaveUndercoverRoom(socket) {
     if (room.hostId === player.userId) {
         room.hostId = room.players.keys().next().value;
     }
-    if (room.status === "voting" && (player.isUndercover || room.players.size < 3)) {
-        clearUndercoverTimer(room);
-        room.status = "lobby";
-        room.round = 0;
-        room.endsAt = null;
-        room.votes.clear();
-        room.reveal = null;
-        room.players.forEach(member => {
-            member.isUndercover = false;
-            member.word = "";
-        });
-        room.notice = player.isUndercover
-            ? "L'undercover a quitté le salon. La partie est revenue au salon."
-            : "Il faut au moins 3 joueurs. La partie est revenue au salon.";
-        broadcastUndercoverRoom(room);
-    } else {
-        room.notice = "";
-        if (room.status === "voting") {
-            completeUndercoverVoting(room);
-        } else {
-            broadcastUndercoverRoom(room);
-        }
-    }
+    handleUndercoverPlayerRemoved(room, player);
 }
 
 io.on("connection", socket => {
@@ -715,6 +786,8 @@ io.on("connection", socket => {
             status: "lobby",
             round: 0,
             endsAt: null,
+            turnOrder: [],
+            turnIndex: -1,
             normalWord: "",
             undercoverWord: "",
             players: new Map([[userId, {
@@ -797,23 +870,7 @@ io.on("connection", socket => {
             room.players.delete(targetId);
             room.votes.delete(targetId);
             if (room.hostId === targetId) room.hostId = room.players.keys().next().value;
-            if (room.status === "voting" &&
-                (target.isUndercover || room.players.size < 3)) {
-                clearUndercoverTimer(room);
-                room.status = "lobby";
-                room.round = 0;
-                room.endsAt = null;
-                room.votes.clear();
-                room.reveal = null;
-                room.players.forEach(member => {
-                    member.isUndercover = false;
-                    member.word = "";
-                });
-                room.notice = "Il faut un undercover présent et au moins 3 joueurs. La partie est revenue au salon.";
-            } else {
-                completeUndercoverVoting(room);
-            }
-            broadcastUndercoverRoom(room);
+            handleUndercoverPlayerRemoved(room, target);
         }
         reply({ ok: true });
     });

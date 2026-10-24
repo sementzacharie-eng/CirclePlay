@@ -1,10 +1,10 @@
 module.exports = {
-    Animaux: [
+    "Personnages de films": [
         { normal: "Chat", undercover: "Chien" },
         { normal: "Lion", undercover: "Tigre" },
         { normal: "Dauphin", undercover: "Requin" }
     ],
-    Nourriture: [
+    "Super Hero": [
         { normal: "Pizza", undercover: "Tarte" },
         { normal: "Fraise", undercover: "Framboise" },
         { normal: "Crêpe", undercover: "Gaufre" }
@@ -19,7 +19,7 @@ module.exports = {
         { normal: "Canapé", undercover: "Fauteuil" },
         { normal: "Fourchette", undercover: "Cuillère" }
     ],
-    Métiers: [
+    "Extreme": [
         { normal: "Médecin", undercover: "Infirmier" },
         { normal: "Pompier", undercover: "Policier" },
         { normal: "Boulanger", undercover: "Pâtissier" }

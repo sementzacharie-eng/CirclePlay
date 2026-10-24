@@ -2011,3 +2011,92 @@ body {
     color: #fff7b2 !important;
     line-height: 1.4;
 }
+
+#menu-content:has(.undercover-room-layout) {
+    overflow: hidden;
+}
+
+#menu .undercover-room-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 1vw;
+    width: 100%;
+    height: 100%;
+    padding: 1vh 1vw;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#menu .undercover-rules {
+    flex: 0 0 clamp(190px, 23%, 280px);
+    align-self: stretch;
+    padding: 1.5vh 1vw;
+    overflow-y: auto;
+    color: rgba(255, 240, 246, 0.9);
+    text-align: left;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 1vh;
+    box-sizing: border-box;
+}
+
+#menu .undercover-rules h2 {
+    margin: 0.5vh 0 1.5vh;
+    color: #fff7b2;
+    font-size: clamp(17px, 2.3vh, 23px);
+}
+
+#menu .undercover-rules ol {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+    margin: 0;
+    padding-left: 1.5em;
+}
+
+#menu .undercover-rules li {
+    padding-left: 0.2em;
+    font-size: clamp(12px, 1.5vh, 15px);
+    line-height: 1.45;
+}
+
+#menu .undercover-room-layout > .undercover-online-view {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    padding: 1vh 1vw 9vh;
+}
+
+#menu .undercover-current-speaker {
+    color: #fff7b2 !important;
+    font-size: clamp(16px, 2.2vh, 23px) !important;
+    font-weight: 800;
+}
+
+@media screen and (max-width: 768px) {
+    #menu .undercover-room-layout {
+        flex-direction: column;
+        gap: 1vh;
+        overflow-y: auto;
+    }
+
+    #menu .undercover-rules {
+        flex: 0 0 auto;
+        max-height: 23vh;
+        padding: 1vh 3vw;
+    }
+
+    #menu .undercover-rules h2 {
+        margin: 0.2vh 0 0.7vh;
+    }
+
+    #menu .undercover-rules ol {
+        gap: 0.6vh;
+    }
+
+    #menu .undercover-room-layout > .undercover-online-view {
+        flex: 1 0 auto;
+        min-height: 55vh;
+        overflow-y: visible;
+    }
+}
