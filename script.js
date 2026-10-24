@@ -353,9 +353,19 @@ function setAccountIndicator(user) {
         indicator.replaceChildren();
         const isFriendAccount = user &&
             circlePlayFriendAccountNames.has(user.username.toLocaleLowerCase("fr"));
+        const isAdminAccount = Boolean(user?.isAdmin);
         indicator.classList.toggle("is-friend-account", Boolean(isFriendAccount));
+        indicator.classList.toggle("is-admin-account", isAdminAccount);
         if (user) {
-            if (isFriendAccount) {
+            if (isAdminAccount) {
+                const label = document.createElement("span");
+                label.className = "admin-account-label";
+                label.textContent = "Administration";
+                const username = document.createElement("strong");
+                username.className = "admin-account-name";
+                username.textContent = user.username;
+                indicator.append(label, username);
+            } else if (isFriendAccount) {
                 const label = document.createElement("span");
                 label.className = "friend-account-label";
                 label.textContent = "Compte d’ami";
