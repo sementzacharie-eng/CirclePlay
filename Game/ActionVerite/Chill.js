@@ -37,6 +37,10 @@ window.chillActionVeriteData = {
         "Tu dois faire un compliment à {joueur2} sur son apparence.",
         "Tu dois faire un compliment à {joueur2} sur sa personnalité.",
         "Tu dois tenter de faire une pompe, si tu réussis tu gagnes le droit de choisir le gage d'un joueur de ton choix.",
+        "Tu dois faire un câlin à {joueur2} pendant 10 secondes.",
+        "Tu dois faire semblant d'être un animal jusqu'à ton prochain tour.",
+        "Tu dois faire semblant d'être un zombie jusqu'à ton prochain tour.",
+        /*40*/
     ],
     truth: [
         "Quelle est la chose la plus embarrassante que tu aies déjà faite ?",
@@ -64,5 +68,7 @@ window.chillActionVeriteData = {
         "As-tu déjà fais semblant d'être malade pour ne pas aller au travail ?",
         "As-tu déjà fais tes besoins dans la piscine publique ?",
         "As-tu déjà fais semblant d'être malade pour ne pas aller à un rendez-vous ?",
+        /*25*/
+        "Tu préfères ne plus avoir d'argent ou d'internet ?"
     ]
 };

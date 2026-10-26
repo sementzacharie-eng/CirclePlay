@@ -1,6 +1,6 @@
 window.classiqueTestDePureteData = {
     categories: {
-        "Vie quotidienne": {
+        "Hygiène": {
             fille: [
                 { text: "As-tu déjà veillé beaucoup trop tard pour finir une série ?", points: 1 },
                 { text: "As-tu déjà mangé un dessert avant le repas ?", points: 1 },
@@ -26,7 +26,7 @@ window.classiqueTestDePureteData = {
                 { text: "As-tu déjà mangé directement dans le plat plutôt que de le servir ?", points: 1 }
             ]
         },
-        "Amitié": {
+        "Substances": {
             fille: [
                 { text: "As-tu déjà donné un surnom à un ami qui est resté ?", points: 1 },
                 { text: "As-tu déjà ri si fort avec un ami que tu en as pleuré ?", points: 1 },
@@ -52,7 +52,7 @@ window.classiqueTestDePureteData = {
                 { text: "As-tu déjà retrouvé un ami après une longue période sans vous voir ?", points: 1 }
             ]
         },
-        "Amour et crushs": {
+        "Sexe": {
             fille: [
                 { text: "As-tu déjà eu un petit faible pour quelqu'un ?", points: 1 },
                 { text: "As-tu déjà rougi après avoir reçu un compliment ?", points: 1 },
@@ -78,7 +78,7 @@ window.classiqueTestDePureteData = {
                 { text: "As-tu déjà fait le premier pas pour parler à quelqu'un qui te plaisait ?", points: 1 }
             ]
         },
-        "Sorties et fêtes": {
+        "Ethique": {
             fille: [
                 { text: "As-tu déjà dansé alors qu'il n'y avait pas de musique ?", points: 1 },
                 { text: "As-tu déjà chanté au karaoké devant d'autres personnes ?", points: 1 },
@@ -104,7 +104,7 @@ window.classiqueTestDePureteData = {
                 { text: "As-tu déjà fini une soirée en racontant des histoires pendant des heures ?", points: 1 }
             ]
         },
-        "Secrets et petits défis": {
+        "Amour": {
             fille: [
                 { text: "As-tu déjà envoyé un message à la mauvaise personne ?", points: 1 },
                 { text: "As-tu déjà fait une blague qui n'a fait rire que toi ?", points: 1 },
